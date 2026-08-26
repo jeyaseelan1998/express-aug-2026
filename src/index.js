@@ -1,13 +1,13 @@
 require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/db');
-const seedRoles = require('./utils/seed-roles');
+// const seedRoles = require('./utils/seed-roles');
 
 const PORT = process.env.PORT || 3000;
 
 async function start() {
   await connectDB();
-  await seedRoles();
+  // await seedRoles();
   app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
   });
