@@ -1,5 +1,6 @@
 const express = require('express');
 const authRoutes = require('./auth.routes');
+const mediaRoutes = require('../media.routes');
 
 const router = express.Router();
 
@@ -18,6 +19,7 @@ router.get('/health', (req, res) => {
 });
 
 router.use('/auth', authRoutes);
+router.use('/media', mediaRoutes);
 
 // Add more CMS-only routes here, e.g.:
 // const contentRoutes = require('./content.routes');
