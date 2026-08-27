@@ -8,6 +8,16 @@ router.get('/', (req, res) => {
   res.json({ message: 'Hello, world!' });
 });
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: API health check
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: OK
+ */
 router.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });

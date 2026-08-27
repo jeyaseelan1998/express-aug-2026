@@ -23,17 +23,10 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/{scope}/media:
+ * /api/web/media:
  *   post:
  *     summary: Upload a media file
- *     tags: [Media]
- *     parameters:
- *       - in: path
- *         name: scope
- *         required: true
- *         schema:
- *           type: string
- *           enum: [web, cms]
+ *     tags: [Web Media]
  *     requestBody:
  *       required: true
  *       content:
@@ -59,14 +52,69 @@ const router = express.Router();
  *         description: No file provided or file too large
  *   get:
  *     summary: List media files
- *     tags: [Media]
+ *     tags: [Web Media]
  *     parameters:
- *       - in: path
- *         name: scope
- *         required: true
+ *       - in: query
+ *         name: prefix
  *         schema:
  *           type: string
- *           enum: [web, cms]
+ *       - in: query
+ *         name: continuationToken
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: maxKeys
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of media files
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Media'
+ *                 isTruncated:
+ *                   type: boolean
+ *                 nextContinuationToken:
+ *                   type: string
+ *                   nullable: true
+ *
+ * /api/cms/media:
+ *   post:
+ *     summary: Upload a media file
+ *     tags: [CMS Media]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file]
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: File uploaded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 media:
+ *                   $ref: '#/components/schemas/Media'
+ *       400:
+ *         description: No file provided or file too large
+ *   get:
+ *     summary: List media files
+ *     tags: [CMS Media]
+ *     parameters:
  *       - in: query
  *         name: prefix
  *         schema:
@@ -102,17 +150,11 @@ router.get('/', mediaController.list);
 
 /**
  * @swagger
- * /api/{scope}/media/{key}:
+ * /api/web/media/{key}:
  *   put:
  *     summary: Replace an existing media file's content
- *     tags: [Media]
+ *     tags: [Web Media]
  *     parameters:
- *       - in: path
- *         name: scope
- *         required: true
- *         schema:
- *           type: string
- *           enum: [web, cms]
  *       - in: path
  *         name: key
  *         required: true
@@ -144,14 +186,58 @@ router.get('/', mediaController.list);
  *         description: Media not found
  *   delete:
  *     summary: Delete a media file
- *     tags: [Media]
+ *     tags: [Web Media]
  *     parameters:
  *       - in: path
- *         name: scope
+ *         name: key
  *         required: true
  *         schema:
  *           type: string
- *           enum: [web, cms]
+ *         description: The S3 object key (may contain slashes)
+ *     responses:
+ *       204:
+ *         description: File deleted
+ *       404:
+ *         description: Media not found
+ *
+ * /api/cms/media/{key}:
+ *   put:
+ *     summary: Replace an existing media file's content
+ *     tags: [CMS Media]
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The S3 object key (may contain slashes)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file]
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: File updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 media:
+ *                   $ref: '#/components/schemas/Media'
+ *       404:
+ *         description: Media not found
+ *   delete:
+ *     summary: Delete a media file
+ *     tags: [CMS Media]
+ *     parameters:
  *       - in: path
  *         name: key
  *         required: true

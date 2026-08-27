@@ -10,7 +10,7 @@ const options = {
     },
     servers: [
       {
-        url: `http://localhost:${process.env.PORT || 3000}`,
+        url: process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`,
       },
     ],
     components: {
@@ -22,6 +22,13 @@ const options = {
         },
       },
     },
+    tags: [
+      { name: 'Health', description: 'Health check' },
+      { name: 'Web Auth', description: 'Web-facing authentication endpoints' },
+      { name: 'Web Media', description: 'Web-facing media endpoints' },
+      { name: 'CMS Auth', description: 'CMS authentication endpoints' },
+      { name: 'CMS Media', description: 'CMS media endpoints' },
+    ],
   },
   apis: ['./src/routes/**/*.js'],
 };

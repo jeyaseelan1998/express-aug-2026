@@ -11,7 +11,7 @@ async function start() {
   await connectDB();
   // await seedRoles();
   app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
+    console.log(`Server listening on port ${PORT}\nSwagger http://localhost:${PORT}/api-docs`);
   });
 }
 

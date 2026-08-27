@@ -4,20 +4,6 @@ const mediaRoutes = require('../media.routes');
 
 const router = express.Router();
 
-/**
- * @swagger
- * /api/cms/health:
- *   get:
- *     summary: CMS API health check
- *     tags: [CMS]
- *     responses:
- *       200:
- *         description: OK
- */
-router.get('/health', (req, res) => {
-  res.json({ status: 'ok', scope: 'cms' });
-});
-
 router.use('/auth', authRoutes);
 router.use('/media', mediaRoutes);
 
