@@ -29,6 +29,17 @@ const mediaSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    // Pixel dimensions, populated only when the bytes are a supported image.
+    width: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    height: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
   },
   { timestamps: true }
 );

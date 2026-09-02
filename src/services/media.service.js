@@ -5,6 +5,7 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const Media = require('../models/media.model');
 const { getS3Client, getBucket, getSignedUrlTtl } = require('../config/s3');
 const ApiError = require('../utils/api-error');
+const { readImageDimensions } = require('../utils/image-dimensions');
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -55,6 +56,8 @@ async function uploadMedia(file, { prefix = 'uploads' } = {}) {
     })
   );
 
+  const dimensions = readImageDimensions(file.buffer);
+
   let media;
   try {
     media = await Media.create({
@@ -63,6 +66,8 @@ async function uploadMedia(file, { prefix = 'uploads' } = {}) {
       originalName: file.originalname,
       mimetype: file.mimetype,
       size: file.size,
+      width: dimensions?.width ?? null,
+      height: dimensions?.height ?? null,
     });
   } catch (err) {
     // The object is unreachable without a record pointing at it, so clean it
@@ -121,9 +126,15 @@ async function updateMedia(id, file) {
     })
   );
 
+  const dimensions = readImageDimensions(file.buffer);
+
   media.originalName = file.originalname;
   media.mimetype = file.mimetype;
   media.size = file.size;
+  // Always reassign, so replacing an image with a differently sized one (or
+  // with a non-image) never leaves the previous dimensions behind.
+  media.width = dimensions?.width ?? null;
+  media.height = dimensions?.height ?? null;
   await media.save();
 
   return withSignedUrl(media);

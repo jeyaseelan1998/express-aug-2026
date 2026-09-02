@@ -27,6 +27,14 @@ const router = express.Router();
  *           type: string
  *         size:
  *           type: integer
+ *         width:
+ *           type: integer
+ *           nullable: true
+ *           description: Pixel width, null when the file is not a supported image
+ *         height:
+ *           type: integer
+ *           nullable: true
+ *           description: Pixel height, null when the file is not a supported image
  *         url:
  *           type: string
  *           description: >
