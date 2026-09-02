@@ -12,18 +12,22 @@ async function signup({ name, email, password }) {
   const userRole = await Role.findOne({ name: 'user' });
   const user = await User.create({ name, email, password, role: userRole._id });
   await user.populate('role');
-  const token = signToken({ sub: user.id });
+  const token = signToken({ sub: user.id, scope: 'web' });
 
   return { user, token };
 }
 
-async function signin({ email, password }) {
+async function authenticate({ email, password }) {
   const user = await User.findOne({ email }).select('+password').populate('role');
   if (!user || !(await user.comparePassword(password))) {
     throw new ApiError(401, 'Invalid email or password');
   }
+  return user;
+}
 
-  const token = signToken({ sub: user.id });
+async function signin({ email, password }) {
+  const user = await authenticate({ email, password });
+  const token = signToken({ sub: user.id, scope: 'web' });
 
   return { user, token };
 }
@@ -31,11 +35,15 @@ async function signin({ email, password }) {
 const CMS_ROLES = ['admin', 'superadmin'];
 
 async function cmsSignin({ email, password }) {
-  const { user, token } = await signin({ email, password });
+  const user = await authenticate({ email, password });
 
   if (!CMS_ROLES.includes(user.role.name)) {
     throw new ApiError(403, 'Admin access required');
   }
+
+  // Minted only after the role check, and scoped so it cannot be confused
+  // with a web token.
+  const token = signToken({ sub: user.id, scope: 'cms' });
 
   return { user, token };
 }

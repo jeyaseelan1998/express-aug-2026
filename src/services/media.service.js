@@ -6,9 +6,7 @@ const Media = require('../models/media.model');
 const { getS3Client, getBucket, getSignedUrlTtl } = require('../config/s3');
 const ApiError = require('../utils/api-error');
 const { readImageDimensions } = require('../utils/image-dimensions');
-
-const DEFAULT_LIMIT = 20;
-const MAX_LIMIT = 100;
+const { paginationFrom, pageMeta } = require('../utils/paginate');
 
 function buildKey(file, prefix) {
   const ext = path.extname(file.originalname);
@@ -16,11 +14,19 @@ function buildKey(file, prefix) {
 }
 
 /**
- * Objects are private in S3, so a media record is only useful alongside a
- * short-lived presigned GET URL. Signing is cheap and local (no S3 round trip),
- * so every read path mints a fresh one rather than persisting a stale URL.
+ * Attaches a short-lived presigned GET URL to a serialised Media object.
+ * Objects are private in S3, so a media record is only useful alongside one.
+ * Signing is local and cheap (no S3 round trip), so every read path mints a
+ * fresh URL rather than persisting one that would go stale.
+ *
+ * Passes through anything that is not a populated media object -- null, or a
+ * bare ObjectId -- so callers can hand it an unpopulated ref safely.
  */
-async function withSignedUrl(media) {
+async function attachSignedUrl(media) {
+  if (!media || typeof media !== 'object' || !media.key) {
+    return media;
+  }
+
   const expiresIn = getSignedUrlTtl();
   const url = await getSignedUrl(
     getS3Client(),
@@ -29,10 +35,14 @@ async function withSignedUrl(media) {
   );
 
   return {
-    ...media.toJSON(),
+    ...media,
     url,
     urlExpiresAt: Math.floor(Date.now() / 1000) + expiresIn,
   };
+}
+
+function withSignedUrl(media) {
+  return attachSignedUrl(media.toJSON());
 }
 
 async function findMediaOrFail(id) {
@@ -81,27 +91,17 @@ async function uploadMedia(file, { prefix = 'uploads' } = {}) {
   return withSignedUrl(media);
 }
 
-async function listMedia({ page, limit } = {}) {
-  const currentPage = Math.max(Number(page) || 1, 1);
-  const perPage = Math.min(Math.max(Number(limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+async function listMedia(query = {}) {
+  const { page, limit, skip } = paginationFrom(query);
 
   const [docs, total] = await Promise.all([
-    Media.find()
-      .sort({ createdAt: -1 })
-      .skip((currentPage - 1) * perPage)
-      .limit(perPage),
+    Media.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
     Media.countDocuments(),
   ]);
 
   const items = await Promise.all(docs.map(withSignedUrl));
 
-  return {
-    items,
-    page: currentPage,
-    limit: perPage,
-    total,
-    totalPages: Math.ceil(total / perPage),
-  };
+  return { items, ...pageMeta({ page, limit, total }) };
 }
 
 async function getMedia(id) {
@@ -186,4 +186,12 @@ async function deleteMedia(id) {
   await media.deleteOne();
 }
 
-module.exports = { uploadMedia, listMedia, getMedia, streamMedia, updateMedia, deleteMedia };
+module.exports = {
+  uploadMedia,
+  listMedia,
+  getMedia,
+  streamMedia,
+  updateMedia,
+  deleteMedia,
+  attachSignedUrl,
+};
