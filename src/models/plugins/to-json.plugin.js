@@ -14,6 +14,8 @@ function toJsonPlugin(schema, options = {}) {
     transform(doc, ret) {
       if (ret.createdAt) ret.createdAt = toUnixTimestamp(ret.createdAt);
       if (ret.updatedAt) ret.updatedAt = toUnixTimestamp(ret.updatedAt);
+      ret.id = ret._id;
+      delete ret._id;
       delete ret.__v;
       hide.forEach((field) => delete ret[field]);
       return ret;
