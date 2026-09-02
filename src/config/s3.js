@@ -28,6 +28,11 @@ function getMaxUploadBytes() {
   return mb * 1024 * 1024;
 }
 
+function getSignedUrlTtl() {
+  const seconds = Number(process.env.AWS_SIGNED_URL_TTL) || 300;
+  return seconds;
+}
+
 function assertConfigured() {
   const required = ['AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_S3_BUCKET'];
   const missing = required.filter((key) => !process.env[key]);
@@ -36,4 +41,4 @@ function assertConfigured() {
   }
 }
 
-module.exports = { getS3Client, getBucket, getMaxUploadBytes, assertConfigured };
+module.exports = { getS3Client, getBucket, getMaxUploadBytes, getSignedUrlTtl, assertConfigured };
