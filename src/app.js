@@ -1,11 +1,15 @@
 const express = require('express');
+const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const swaggerUi = require('swagger-ui-express');
 const indexRouter = require('./routes/index');
 const swaggerSpec = require('./config/swagger');
+const { corsOptions } = require('./config/cors');
 const { notFound, errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const authController = require('../../controllers/web/auth.controller');
 const validate = require('../../middlewares/validate.middleware');
+const requireAuth = require('../../middlewares/auth.middleware');
 
 const router = express.Router();
 
@@ -174,5 +175,37 @@ router.post(
   validate,
   authController.signin
 );
+
+/**
+ * @swagger
+ * /api/web/auth/profile:
+ *   get:
+ *     summary: Get the signed-in user's details
+ *     tags: [Web Auth]
+ *     description: >
+ *       Reads the token from the `Authorization: Bearer` header when present,
+ *       otherwise from the httpOnly `web_token` cookie set for X-Client-Type
+ *       'web' clients.
+ *     security: [{ bearerAuth: [] }, { webCookie: [] }]
+ *     responses:
+ *       200:
+ *         description: The signed-in user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Token is valid but not a web session
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/profile', requireAuth('web'), authController.profile);
 
 module.exports = router;

@@ -27,4 +27,10 @@ async function signin(req, res, next) {
   }
 }
 
-module.exports = { signup, signin };
+// requireAuth has already resolved and populated the account behind the token,
+// so there is nothing left to look up here.
+function profile(req, res) {
+  res.status(200).json({ user: req.user });
+}
+
+module.exports = { signup, signin, profile };

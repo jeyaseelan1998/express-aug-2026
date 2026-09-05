@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const authController = require('../../controllers/cms/auth.controller');
 const validate = require('../../middlewares/validate.middleware');
+const requireAuth = require('../../middlewares/auth.middleware');
 
 const router = express.Router();
 
@@ -73,5 +74,33 @@ router.post(
   validate,
   authController.signin
 );
+
+/**
+ * @swagger
+ * /api/cms/auth/profile:
+ *   get:
+ *     summary: Get the signed-in CMS user's details
+ *     tags: [CMS Auth]
+ *     description: >
+ *       Reads the token from the `Authorization: Bearer` header when present,
+ *       otherwise from the httpOnly `cms_token` cookie set for X-Client-Type
+ *       'web' clients.
+ *     security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+ *     responses:
+ *       200:
+ *         description: The signed-in user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/WrongScope'
+ */
+router.get('/profile', requireAuth('cms'), authController.profile);
 
 module.exports = router;
