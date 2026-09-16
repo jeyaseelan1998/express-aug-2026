@@ -71,6 +71,16 @@ async function deleteBrand(id) {
 }
 
 /**
+ * Undoes a soft delete. Looks past the soft-delete filter so the flagged row
+ * can be found in the first place.
+ */
+async function restoreBrand(id) {
+  const brand = await findOrFail(id, { withDeleted: true });
+  await brand.restore();
+  return serialize(brand);
+}
+
+/**
  * Hard delete: removes the row for good, with no way back. Looks past the
  * soft-delete filter so an already-deleted record can still be purged.
  */
@@ -79,4 +89,12 @@ async function hardDeleteBrand(id) {
   await brand.deleteOne();
 }
 
-module.exports = { listBrands, getBrand, createBrand, updateBrand, deleteBrand, hardDeleteBrand };
+module.exports = {
+  listBrands,
+  getBrand,
+  createBrand,
+  updateBrand,
+  deleteBrand,
+  restoreBrand,
+  hardDeleteBrand,
+};

@@ -48,6 +48,15 @@ async function remove(req, res, next) {
   }
 }
 
+async function restore(req, res, next) {
+  try {
+    const promoCode = await promoCodeService.restorePromoCode(req.params.id);
+    res.status(200).json({ promoCode });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // Permanent: the row is gone afterwards, so nothing is returned.
 async function hardDelete(req, res, next) {
   try {
@@ -58,4 +67,4 @@ async function hardDelete(req, res, next) {
   }
 }
 
-module.exports = { list, getById, create, update, remove, hardDelete };
+module.exports = { list, getById, create, update, remove, restore, hardDelete };

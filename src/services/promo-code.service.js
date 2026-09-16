@@ -47,6 +47,16 @@ async function deletePromoCode(id) {
 }
 
 /**
+ * Undoes a soft delete. Looks past the soft-delete filter so the flagged row
+ * can be found in the first place.
+ */
+async function restorePromoCode(id) {
+  const promoCode = await findOrFail(id, { withDeleted: true });
+  await promoCode.restore();
+  return promoCode.toJSON();
+}
+
+/**
  * Hard delete: removes the row for good, with no way back. Looks past the
  * soft-delete filter so an already-deleted record can still be purged.
  */
@@ -61,5 +71,6 @@ module.exports = {
   createPromoCode,
   updatePromoCode,
   deletePromoCode,
+  restorePromoCode,
   hardDeletePromoCode,
 };

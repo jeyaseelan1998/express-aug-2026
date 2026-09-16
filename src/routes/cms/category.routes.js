@@ -220,6 +220,38 @@ router.put(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.patch('/:id/delete', validateId, categoryController.remove);
+
+/**
+ * @swagger
+ * /api/cms/category/{id}/restore:
+ *   patch:
+ *     summary: Restore a category
+ *     description: >
+ *       Undoes a soft delete. Sets `deleted` back to 0 and returns the
+ *       record, which shows up in ordinary lists and lookups again. Restoring
+ *       a record that is not deleted leaves it as it is.
+ *     tags: [CMS Category]
+ *     security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+ *     parameters:
+ *       - $ref: '#/components/parameters/ResourceId'
+ *     responses:
+ *       200:
+ *         description: Restored
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 category:
+ *                   $ref: '#/components/schemas/Category'
+ *       400:
+ *         $ref: '#/components/responses/ValidationFailed'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.patch('/:id/restore', validateId, categoryController.restore);
 router.delete('/:id', validateId, categoryController.hardDelete);
 
 module.exports = router;

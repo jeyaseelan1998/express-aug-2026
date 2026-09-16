@@ -46,6 +46,16 @@ async function deleteSize(id) {
 }
 
 /**
+ * Undoes a soft delete. Looks past the soft-delete filter so the flagged row
+ * can be found in the first place.
+ */
+async function restoreSize(id) {
+  const size = await findOrFail(id, { withDeleted: true });
+  await size.restore();
+  return size.toJSON();
+}
+
+/**
  * Hard delete: removes the row for good, with no way back. Looks past the
  * soft-delete filter so an already-deleted record can still be purged.
  */
@@ -54,4 +64,12 @@ async function hardDeleteSize(id) {
   await size.deleteOne();
 }
 
-module.exports = { listSizes, getSize, createSize, updateSize, deleteSize, hardDeleteSize };
+module.exports = {
+  listSizes,
+  getSize,
+  createSize,
+  updateSize,
+  deleteSize,
+  restoreSize,
+  hardDeleteSize,
+};

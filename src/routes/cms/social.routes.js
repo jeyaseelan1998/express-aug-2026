@@ -248,6 +248,38 @@ router.put(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.patch('/:id/delete', validateId, socialController.remove);
+
+/**
+ * @swagger
+ * /api/cms/social/{id}/restore:
+ *   patch:
+ *     summary: Restore a social link
+ *     description: >
+ *       Undoes a soft delete. Sets `deleted` back to 0 and returns the
+ *       record, which shows up in ordinary lists and lookups again. Restoring
+ *       a record that is not deleted leaves it as it is.
+ *     tags: [CMS Social]
+ *     security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+ *     parameters:
+ *       - $ref: '#/components/parameters/ResourceId'
+ *     responses:
+ *       200:
+ *         description: Restored
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 social:
+ *                   $ref: '#/components/schemas/Social'
+ *       400:
+ *         $ref: '#/components/responses/ValidationFailed'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.patch('/:id/restore', validateId, socialController.restore);
 router.delete('/:id', validateId, socialController.hardDelete);
 
 module.exports = router;

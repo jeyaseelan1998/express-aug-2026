@@ -53,6 +53,12 @@ function softDeletePlugin(schema) {
     this.deleted = DELETED;
     return this.save();
   };
+
+  /** Undoes a soft delete, putting the document back in circulation. */
+  schema.methods.restore = function restore() {
+    this.deleted = ACTIVE;
+    return this.save();
+  };
 }
 
 module.exports = softDeletePlugin;

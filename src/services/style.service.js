@@ -70,6 +70,16 @@ async function deleteStyle(id) {
 }
 
 /**
+ * Undoes a soft delete. Looks past the soft-delete filter so the flagged row
+ * can be found in the first place.
+ */
+async function restoreStyle(id) {
+  const style = await findOrFail(id, { withDeleted: true });
+  await style.restore();
+  return serialize(style);
+}
+
+/**
  * Hard delete: removes the row for good, with no way back. Looks past the
  * soft-delete filter so an already-deleted record can still be purged.
  */
@@ -78,4 +88,12 @@ async function hardDeleteStyle(id) {
   await style.deleteOne();
 }
 
-module.exports = { listStyles, getStyle, createStyle, updateStyle, deleteStyle, hardDeleteStyle };
+module.exports = {
+  listStyles,
+  getStyle,
+  createStyle,
+  updateStyle,
+  deleteStyle,
+  restoreStyle,
+  hardDeleteStyle,
+};

@@ -46,6 +46,16 @@ async function deleteCategory(id) {
 }
 
 /**
+ * Undoes a soft delete. Looks past the soft-delete filter so the flagged row
+ * can be found in the first place.
+ */
+async function restoreCategory(id) {
+  const category = await findOrFail(id, { withDeleted: true });
+  await category.restore();
+  return category.toJSON();
+}
+
+/**
  * Hard delete: removes the row for good, with no way back. Looks past the
  * soft-delete filter so an already-deleted record can still be purged.
  */
@@ -60,5 +70,6 @@ module.exports = {
   createCategory,
   updateCategory,
   deleteCategory,
+  restoreCategory,
   hardDeleteCategory,
 };

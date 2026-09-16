@@ -156,6 +156,16 @@ async function deleteProduct(id) {
 }
 
 /**
+ * Undoes a soft delete. Looks past the soft-delete filter so the flagged row
+ * can be found in the first place.
+ */
+async function restoreProduct(id) {
+  const product = await findOrFail(id, { withDeleted: true });
+  await product.restore();
+  return serialize(product);
+}
+
+/**
  * Hard delete: removes the row for good, with no way back. Looks past the
  * soft-delete filter so an already-deleted record can still be purged.
  */
@@ -170,5 +180,6 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
+  restoreProduct,
   hardDeleteProduct,
 };

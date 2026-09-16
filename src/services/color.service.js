@@ -48,6 +48,16 @@ async function deleteColor(id) {
 }
 
 /**
+ * Undoes a soft delete. Looks past the soft-delete filter so the flagged row
+ * can be found in the first place.
+ */
+async function restoreColor(id) {
+  const color = await findOrFail(id, { withDeleted: true });
+  await color.restore();
+  return color.toJSON();
+}
+
+/**
  * Hard delete: removes the row for good, with no way back. Looks past the
  * soft-delete filter so an already-deleted record can still be purged.
  */
@@ -56,4 +66,12 @@ async function hardDeleteColor(id) {
   await color.deleteOne();
 }
 
-module.exports = { listColors, getColor, createColor, updateColor, deleteColor, hardDeleteColor };
+module.exports = {
+  listColors,
+  getColor,
+  createColor,
+  updateColor,
+  deleteColor,
+  restoreColor,
+  hardDeleteColor,
+};

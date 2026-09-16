@@ -235,6 +235,38 @@ router.put(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.patch('/:id/delete', validateId, promoCodeController.remove);
+
+/**
+ * @swagger
+ * /api/cms/promo-code/{id}/restore:
+ *   patch:
+ *     summary: Restore a promo code
+ *     description: >
+ *       Undoes a soft delete. Sets `deleted` back to 0 and returns the
+ *       record, which shows up in ordinary lists and lookups again. Restoring
+ *       a record that is not deleted leaves it as it is.
+ *     tags: [CMS Promo Code]
+ *     security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+ *     parameters:
+ *       - $ref: '#/components/parameters/ResourceId'
+ *     responses:
+ *       200:
+ *         description: Restored
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 promoCode:
+ *                   $ref: '#/components/schemas/PromoCode'
+ *       400:
+ *         $ref: '#/components/responses/ValidationFailed'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.patch('/:id/restore', validateId, promoCodeController.restore);
 router.delete('/:id', validateId, promoCodeController.hardDelete);
 
 module.exports = router;
