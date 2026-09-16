@@ -45,8 +45,8 @@ function withSignedUrl(media) {
   return attachSignedUrl(media.toJSON());
 }
 
-async function findMediaOrFail(id) {
-  const media = await Media.findById(id);
+async function findMediaOrFail(id, { withDeleted = false } = {}) {
+  const media = await Media.findById(id).setOptions({ withDeleted });
   if (!media) {
     throw new ApiError(404, 'Media not found');
   }
@@ -91,12 +91,16 @@ async function uploadMedia(file, { prefix = 'uploads' } = {}) {
   return withSignedUrl(media);
 }
 
-async function listMedia(query = {}) {
+/**
+ * `withDeleted` is for the CMS listing, which shows soft-deleted records so an
+ * admin can see and purge them; the web listing leaves it off.
+ */
+async function listMedia(query = {}, { withDeleted = false } = {}) {
   const { page, limit, skip } = paginationFrom(query);
 
   const [docs, total] = await Promise.all([
-    Media.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
-    Media.countDocuments(),
+    Media.find().setOptions({ withDeleted }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Media.countDocuments().setOptions({ withDeleted }),
   ]);
 
   const items = await Promise.all(docs.map(withSignedUrl));
@@ -178,8 +182,26 @@ async function streamMedia(id, { range } = {}) {
   };
 }
 
+/**
+ * Soft delete: the record is flagged and drops out of listings, but the S3
+ * object is deliberately left in place. Products and brands still hold refs
+ * to this id, and removing the bytes would break anything already pointing
+ * at them and make the delete impossible to undo.
+ */
 async function deleteMedia(id) {
   const media = await findMediaOrFail(id);
+  await media.softDelete();
+  return withSignedUrl(media);
+}
+
+/**
+ * Hard delete: drops the S3 object and the row together, with no way back.
+ * Looks past the soft-delete filter so an already-deleted record can still be
+ * purged. Anything still referencing this media id is left pointing at
+ * nothing, so prefer the soft delete unless the bytes must genuinely go.
+ */
+async function hardDeleteMedia(id) {
+  const media = await findMediaOrFail(id, { withDeleted: true });
 
   // S3 DeleteObject is idempotent, so a missing object still resolves.
   await getS3Client().send(new DeleteObjectCommand({ Bucket: media.bucket, Key: media.key }));
@@ -193,5 +215,6 @@ module.exports = {
   streamMedia,
   updateMedia,
   deleteMedia,
+  hardDeleteMedia,
   attachSignedUrl,
 };

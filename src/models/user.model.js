@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const toJsonPlugin = require('./plugins/to-json.plugin');
+const softDeletePlugin = require('./plugins/soft-delete.plugin');
 
 const userSchema = new mongoose.Schema(
   {
@@ -40,6 +41,7 @@ userSchema.methods.comparePassword = function comparePassword(candidate) {
   return bcrypt.compare(candidate, this.password);
 };
 
+userSchema.plugin(softDeletePlugin);
 userSchema.plugin(toJsonPlugin, { hide: ['password'] });
 
 module.exports = mongoose.model('User', userSchema);

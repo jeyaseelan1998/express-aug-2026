@@ -2,8 +2,8 @@ const Color = require('../models/color.model');
 const ApiError = require('../utils/api-error');
 const { paginationFrom, pageMeta } = require('../utils/paginate');
 
-async function findOrFail(id) {
-  const color = await Color.findById(id);
+async function findOrFail(id, { withDeleted = false } = {}) {
+  const color = await Color.findById(id).setOptions({ withDeleted });
   if (!color) {
     throw new ApiError(404, 'Color not found');
   }
@@ -40,9 +40,20 @@ async function updateColor(id, { name, code, keywords }) {
   return color.toJSON();
 }
 
+/** Soft delete: the row is kept and flagged, not removed. */
 async function deleteColor(id) {
   const color = await findOrFail(id);
+  await color.softDelete();
+  return color.toJSON();
+}
+
+/**
+ * Hard delete: removes the row for good, with no way back. Looks past the
+ * soft-delete filter so an already-deleted record can still be purged.
+ */
+async function hardDeleteColor(id) {
+  const color = await findOrFail(id, { withDeleted: true });
   await color.deleteOne();
 }
 
-module.exports = { listColors, getColor, createColor, updateColor, deleteColor };
+module.exports = { listColors, getColor, createColor, updateColor, deleteColor, hardDeleteColor };

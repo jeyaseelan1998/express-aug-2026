@@ -2,8 +2,8 @@ const PromoCode = require('../models/promo-code.model');
 const ApiError = require('../utils/api-error');
 const { paginationFrom, pageMeta } = require('../utils/paginate');
 
-async function findOrFail(id) {
-  const promoCode = await PromoCode.findById(id);
+async function findOrFail(id, { withDeleted = false } = {}) {
+  const promoCode = await PromoCode.findById(id).setOptions({ withDeleted });
   if (!promoCode) {
     throw new ApiError(404, 'Promo code not found');
   }
@@ -39,8 +39,19 @@ async function updatePromoCode(id, { name, discount }) {
   return promoCode.toJSON();
 }
 
+/** Soft delete: the row is kept and flagged, not removed. */
 async function deletePromoCode(id) {
   const promoCode = await findOrFail(id);
+  await promoCode.softDelete();
+  return promoCode.toJSON();
+}
+
+/**
+ * Hard delete: removes the row for good, with no way back. Looks past the
+ * soft-delete filter so an already-deleted record can still be purged.
+ */
+async function hardDeletePromoCode(id) {
+  const promoCode = await findOrFail(id, { withDeleted: true });
   await promoCode.deleteOne();
 }
 
@@ -50,4 +61,5 @@ module.exports = {
   createPromoCode,
   updatePromoCode,
   deletePromoCode,
+  hardDeletePromoCode,
 };

@@ -208,4 +208,28 @@ router.post(
  */
 router.get('/profile', requireAuth('web'), authController.profile);
 
+/**
+ * @swagger
+ * /api/web/auth/signout:
+ *   post:
+ *     summary: Sign out of the web session
+ *     tags: [Web Auth]
+ *     description: >
+ *       Clears the httpOnly `web_token` cookie. Tokens are stateless, so bearer
+ *       clients should discard the token on their side. Always succeeds, even
+ *       without a valid session, so clients can clean up an expired one.
+ *     responses:
+ *       200:
+ *         description: Signed out
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Signed out
+ */
+router.post('/signout', authController.signout);
+
 module.exports = router;

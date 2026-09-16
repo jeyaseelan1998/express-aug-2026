@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const toJsonPlugin = require('./plugins/to-json.plugin');
+const softDeletePlugin = require('./plugins/soft-delete.plugin');
 
 const mediaSchema = new mongoose.Schema(
   {
@@ -46,6 +47,7 @@ const mediaSchema = new mongoose.Schema(
 
 mediaSchema.index({ createdAt: -1 });
 
+mediaSchema.plugin(softDeletePlugin);
 mediaSchema.plugin(toJsonPlugin);
 
 module.exports = mongoose.model('Media', mediaSchema);

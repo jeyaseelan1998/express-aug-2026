@@ -12,8 +12,8 @@ async function serialize(doc) {
   return json;
 }
 
-async function findOrFail(id) {
-  const brand = await Brand.findById(id).populate('image');
+async function findOrFail(id, { withDeleted = false } = {}) {
+  const brand = await Brand.findById(id).setOptions({ withDeleted }).populate('image');
   if (!brand) {
     throw new ApiError(404, 'Brand not found');
   }
@@ -58,9 +58,20 @@ async function updateBrand(id, { name, image }) {
   return serialize(brand);
 }
 
+/** Soft delete: the row is kept and flagged, not removed. */
 async function deleteBrand(id) {
   const brand = await findOrFail(id);
+  await brand.softDelete();
+  return serialize(brand);
+}
+
+/**
+ * Hard delete: removes the row for good, with no way back. Looks past the
+ * soft-delete filter so an already-deleted record can still be purged.
+ */
+async function hardDeleteBrand(id) {
+  const brand = await findOrFail(id, { withDeleted: true });
   await brand.deleteOne();
 }
 
-module.exports = { listBrands, getBrand, createBrand, updateBrand, deleteBrand };
+module.exports = { listBrands, getBrand, createBrand, updateBrand, deleteBrand, hardDeleteBrand };

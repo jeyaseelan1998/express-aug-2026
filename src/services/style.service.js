@@ -11,8 +11,8 @@ async function serialize(doc) {
   return json;
 }
 
-async function findOrFail(id) {
-  const style = await Style.findById(id).populate('image');
+async function findOrFail(id, { withDeleted = false } = {}) {
+  const style = await Style.findById(id).setOptions({ withDeleted }).populate('image');
   if (!style) {
     throw new ApiError(404, 'Style not found');
   }
@@ -57,9 +57,20 @@ async function updateStyle(id, { name, image }) {
   return serialize(style);
 }
 
+/** Soft delete: the row is kept and flagged, not removed. */
 async function deleteStyle(id) {
   const style = await findOrFail(id);
+  await style.softDelete();
+  return serialize(style);
+}
+
+/**
+ * Hard delete: removes the row for good, with no way back. Looks past the
+ * soft-delete filter so an already-deleted record can still be purged.
+ */
+async function hardDeleteStyle(id) {
+  const style = await findOrFail(id, { withDeleted: true });
   await style.deleteOne();
 }
 
-module.exports = { listStyles, getStyle, createStyle, updateStyle, deleteStyle };
+module.exports = { listStyles, getStyle, createStyle, updateStyle, deleteStyle, hardDeleteStyle };

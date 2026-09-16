@@ -38,11 +38,21 @@ async function update(req, res, next) {
 
 async function remove(req, res, next) {
   try {
-    await socialService.deleteSocial(req.params.id);
+    const social = await socialService.deleteSocial(req.params.id);
+    res.status(200).json({ social });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Permanent: the row is gone afterwards, so nothing is returned.
+async function hardDelete(req, res, next) {
+  try {
+    await socialService.hardDeleteSocial(req.params.id);
     res.status(204).send();
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { list, getById, create, update, remove };
+module.exports = { list, getById, create, update, remove, hardDelete };

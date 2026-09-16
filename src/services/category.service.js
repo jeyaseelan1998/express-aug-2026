@@ -2,8 +2,8 @@ const Category = require('../models/category.model');
 const ApiError = require('../utils/api-error');
 const { paginationFrom, pageMeta } = require('../utils/paginate');
 
-async function findOrFail(id) {
-  const category = await Category.findById(id);
+async function findOrFail(id, { withDeleted = false } = {}) {
+  const category = await Category.findById(id).setOptions({ withDeleted });
   if (!category) {
     throw new ApiError(404, 'Category not found');
   }
@@ -38,8 +38,19 @@ async function updateCategory(id, { name }) {
   return category.toJSON();
 }
 
+/** Soft delete: the row is kept and flagged, not removed. */
 async function deleteCategory(id) {
   const category = await findOrFail(id);
+  await category.softDelete();
+  return category.toJSON();
+}
+
+/**
+ * Hard delete: removes the row for good, with no way back. Looks past the
+ * soft-delete filter so an already-deleted record can still be purged.
+ */
+async function hardDeleteCategory(id) {
+  const category = await findOrFail(id, { withDeleted: true });
   await category.deleteOne();
 }
 
@@ -49,4 +60,5 @@ module.exports = {
   createCategory,
   updateCategory,
   deleteCategory,
+  hardDeleteCategory,
 };

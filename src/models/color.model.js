@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const toJsonPlugin = require('./plugins/to-json.plugin');
+const softDeletePlugin = require('./plugins/soft-delete.plugin');
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
@@ -26,6 +27,7 @@ const colorSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+colorSchema.plugin(softDeletePlugin);
 colorSchema.plugin(toJsonPlugin);
 
 module.exports = mongoose.model('Color', colorSchema);

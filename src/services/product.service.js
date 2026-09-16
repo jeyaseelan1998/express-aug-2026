@@ -68,8 +68,8 @@ async function assertPayloadRefs(payload) {
   ]);
 }
 
-async function findOrFail(id) {
-  const product = await Product.findById(id).populate(POPULATE);
+async function findOrFail(id, { withDeleted = false } = {}) {
+  const product = await Product.findById(id).setOptions({ withDeleted }).populate(POPULATE);
   if (!product) {
     throw new ApiError(404, 'Product not found');
   }
@@ -143,8 +143,19 @@ async function updateProduct(id, payload) {
   return serialize(product);
 }
 
+/** Soft delete: the row is kept and flagged, not removed. */
 async function deleteProduct(id) {
   const product = await findOrFail(id);
+  await product.softDelete();
+  return serialize(product);
+}
+
+/**
+ * Hard delete: removes the row for good, with no way back. Looks past the
+ * soft-delete filter so an already-deleted record can still be purged.
+ */
+async function hardDeleteProduct(id) {
+  const product = await findOrFail(id, { withDeleted: true });
   await product.deleteOne();
 }
 
@@ -154,4 +165,5 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
+  hardDeleteProduct,
 };

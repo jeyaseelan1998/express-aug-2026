@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const toJsonPlugin = require('./plugins/to-json.plugin');
+const softDeletePlugin = require('./plugins/soft-delete.plugin');
 
 const socialSchema = new mongoose.Schema(
   {
@@ -23,6 +24,7 @@ const socialSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+socialSchema.plugin(softDeletePlugin);
 socialSchema.plugin(toJsonPlugin);
 
 module.exports = mongoose.model('Social', socialSchema);

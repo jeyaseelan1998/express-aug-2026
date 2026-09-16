@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const toJsonPlugin = require('./plugins/to-json.plugin');
+const softDeletePlugin = require('./plugins/soft-delete.plugin');
 
 const roleSchema = new mongoose.Schema(
   {
@@ -17,6 +18,7 @@ const roleSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+roleSchema.plugin(softDeletePlugin);
 roleSchema.plugin(toJsonPlugin);
 
 module.exports = mongoose.model('Role', roleSchema);

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const toJsonPlugin = require('./plugins/to-json.plugin');
+const softDeletePlugin = require('./plugins/soft-delete.plugin');
 
 const isInteger = {
   validator: Number.isInteger,
@@ -151,6 +152,7 @@ productSchema.index({ createdAt: -1 });
 productSchema.index({ brand: 1 });
 productSchema.index({ category: 1 });
 
+productSchema.plugin(softDeletePlugin);
 productSchema.plugin(toJsonPlugin);
 
 module.exports = mongoose.model('Product', productSchema);

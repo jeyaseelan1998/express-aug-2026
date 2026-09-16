@@ -347,14 +347,21 @@ router.post(
  *       422:
  *         $ref: '#/components/responses/RefNotFound'
  *   delete:
- *     summary: Delete a product
+ *     summary: Permanently delete a product
+ *     description: >
+ *       Hard delete. Removes the row outright, with no way back -- use the
+ *       `PATCH /{id}/delete` soft delete unless the record must genuinely be
+ *       purged. Works on already soft-deleted records too. Anything still
+ *       referencing this id is left pointing at nothing.
  *     tags: [CMS Product]
  *     security: [{ bearerAuth: [] }, { cmsCookie: [] }]
  *     parameters:
  *       - $ref: '#/components/parameters/ResourceId'
  *     responses:
  *       204:
- *         description: Deleted
+ *         description: Permanently deleted
+ *       400:
+ *         $ref: '#/components/responses/ValidationFailed'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  *       404:
@@ -374,6 +381,38 @@ router.put(
   validate,
   productController.update
 );
-router.delete('/:id', validateId, productController.remove);
+
+/**
+ * @swagger
+ * /api/cms/product/{id}/delete:
+ *   patch:
+ *     summary: Delete a product
+ *     description: >
+ *       Soft delete. Sets `deleted` to 1 and returns the updated record; the
+ *       row is kept but stops appearing in any list or lookup. Deleting an
+ *       already-deleted record returns 404, since it is no longer visible.
+ *     tags: [CMS Product]
+ *     security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+ *     parameters:
+ *       - $ref: '#/components/parameters/ResourceId'
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 product:
+ *                   $ref: '#/components/schemas/Product'
+ *       400:
+ *         $ref: '#/components/responses/ValidationFailed'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.patch('/:id/delete', validateId, productController.remove);
+router.delete('/:id', validateId, productController.hardDelete);
 
 module.exports = router;

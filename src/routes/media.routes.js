@@ -44,6 +44,12 @@ const router = express.Router();
  *           type: integer
  *           format: int64
  *           description: Unix timestamp (seconds) at which url stops working
+ *         deleted:
+ *           type: integer
+ *           enum: [0, 1]
+ *           description: >
+ *             0 for a live record, 1 for a soft-deleted one. Only the CMS
+ *             listing returns records with 1; everywhere else they are hidden.
  *         createdAt:
  *           type: integer
  *           format: int64
@@ -101,7 +107,9 @@ const router = express.Router();
  *         description: No file provided or file too large
  *   get:
  *     summary: List media records
- *     description: Paginates the Media collection, newest first.
+ *     description: >
+ *       Paginates the Media collection, newest first. Soft-deleted records are
+ *       excluded; the CMS listing is the one that shows them.
  *     tags: [Web Media]
  *     parameters:
  *       - in: query
@@ -154,8 +162,12 @@ const router = express.Router();
  *       400:
  *         description: No file provided or file too large
  *   get:
- *     summary: List media records
- *     description: Paginates the Media collection, newest first.
+ *     summary: List media records, including deleted ones
+ *     description: >
+ *       Paginates the Media collection, newest first. Unlike every other read,
+ *       this listing also returns soft-deleted records (`deleted: 1`) so an
+ *       admin can see what was removed and purge it with DELETE. Check the
+ *       `deleted` field on each item to tell them apart.
  *     tags: [CMS Media]
  *     parameters:
  *       - in: query
@@ -263,7 +275,13 @@ const validateId = [param('id').isMongoId().withMessage('A valid media id is req
  *       404:
  *         description: Media not found
  *   delete:
- *     summary: Delete a media file and its record
+ *     summary: Permanently delete a media file and its record
+ *     description: >
+ *       Hard delete. Removes the S3 object and the row together, with no way
+ *       back -- use the `PATCH /{id}/delete` soft delete unless the bytes
+ *       must genuinely go. Works on already soft-deleted records too.
+ *       Products, brands and styles still referencing this id are left
+ *       pointing at nothing.
  *     tags: [Web Media]
  *     parameters:
  *       - in: path
@@ -274,7 +292,7 @@ const validateId = [param('id').isMongoId().withMessage('A valid media id is req
  *         description: The Media record id
  *     responses:
  *       204:
- *         description: File and record deleted
+ *         description: File and record permanently deleted
  *       400:
  *         description: Invalid media id
  *       404:
@@ -348,7 +366,13 @@ const validateId = [param('id').isMongoId().withMessage('A valid media id is req
  *       404:
  *         description: Media not found
  *   delete:
- *     summary: Delete a media file and its record
+ *     summary: Permanently delete a media file and its record
+ *     description: >
+ *       Hard delete. Removes the S3 object and the row together, with no way
+ *       back -- use the `PATCH /{id}/delete` soft delete unless the bytes
+ *       must genuinely go. Works on already soft-deleted records too.
+ *       Products, brands and styles still referencing this id are left
+ *       pointing at nothing.
  *     tags: [CMS Media]
  *     parameters:
  *       - in: path
@@ -359,7 +383,7 @@ const validateId = [param('id').isMongoId().withMessage('A valid media id is req
  *         description: The Media record id
  *     responses:
  *       204:
- *         description: File and record deleted
+ *         description: File and record permanently deleted
  *       400:
  *         description: Invalid media id
  *       404:
@@ -367,7 +391,71 @@ const validateId = [param('id').isMongoId().withMessage('A valid media id is req
  */
 router.get('/:id', validateId, mediaController.getById);
 router.put('/:id', validateId, upload.single('file'), mediaController.update);
-router.delete('/:id', validateId, mediaController.remove);
+
+/**
+ * @swagger
+ * /api/web/media/{id}/delete:
+ *   patch:
+ *     summary: Delete a media record
+ *     description: >
+ *       Soft delete. Sets `deleted` to 1 and returns the updated record. The
+ *       S3 object is deliberately left in place, because products, brands and
+ *       styles may still reference this media id.
+ *     tags: [Web Media]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The Media record id
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 media:
+ *                   $ref: '#/components/schemas/Media'
+ *       400:
+ *         description: Invalid media id
+ *       404:
+ *         description: Media not found
+ *
+ * /api/cms/media/{id}/delete:
+ *   patch:
+ *     summary: Delete a media record
+ *     description: >
+ *       Soft delete. Sets `deleted` to 1 and returns the updated record. The
+ *       S3 object is deliberately left in place, because products, brands and
+ *       styles may still reference this media id.
+ *     tags: [CMS Media]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The Media record id
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 media:
+ *                   $ref: '#/components/schemas/Media'
+ *       400:
+ *         description: Invalid media id
+ *       404:
+ *         description: Media not found
+ */
+router.patch('/:id/delete', validateId, mediaController.remove);
+router.delete('/:id', validateId, mediaController.hardDelete);
 
 /**
  * @swagger

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const toJsonPlugin = require('./plugins/to-json.plugin');
+const softDeletePlugin = require('./plugins/soft-delete.plugin');
 
 const brandSchema = new mongoose.Schema(
   {
@@ -18,6 +19,7 @@ const brandSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+brandSchema.plugin(softDeletePlugin);
 brandSchema.plugin(toJsonPlugin);
 
 module.exports = mongoose.model('Brand', brandSchema);

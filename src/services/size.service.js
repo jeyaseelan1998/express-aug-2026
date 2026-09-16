@@ -2,8 +2,8 @@ const Size = require('../models/size.model');
 const ApiError = require('../utils/api-error');
 const { paginationFrom, pageMeta } = require('../utils/paginate');
 
-async function findOrFail(id) {
-  const size = await Size.findById(id);
+async function findOrFail(id, { withDeleted = false } = {}) {
+  const size = await Size.findById(id).setOptions({ withDeleted });
   if (!size) {
     throw new ApiError(404, 'Size not found');
   }
@@ -38,9 +38,20 @@ async function updateSize(id, { name }) {
   return size.toJSON();
 }
 
+/** Soft delete: the row is kept and flagged, not removed. */
 async function deleteSize(id) {
   const size = await findOrFail(id);
+  await size.softDelete();
+  return size.toJSON();
+}
+
+/**
+ * Hard delete: removes the row for good, with no way back. Looks past the
+ * soft-delete filter so an already-deleted record can still be purged.
+ */
+async function hardDeleteSize(id) {
+  const size = await findOrFail(id, { withDeleted: true });
   await size.deleteOne();
 }
 
-module.exports = { listSizes, getSize, createSize, updateSize, deleteSize };
+module.exports = { listSizes, getSize, createSize, updateSize, deleteSize, hardDeleteSize };

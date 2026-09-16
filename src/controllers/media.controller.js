@@ -16,7 +16,8 @@ async function upload(req, res, next) {
 async function list(req, res, next) {
   try {
     const { page, limit } = req.query;
-    const result = await mediaService.listMedia({ page, limit });
+    // The CMS surface lists soft-deleted records too, so they can be seen and purged.
+    const result = await mediaService.listMedia({ page, limit }, { withDeleted: req.isCmsSurface });
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -74,11 +75,21 @@ async function update(req, res, next) {
 
 async function remove(req, res, next) {
   try {
-    await mediaService.deleteMedia(req.params.id);
+    const media = await mediaService.deleteMedia(req.params.id);
+    res.status(200).json({ media });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Permanent: the row is gone afterwards, so nothing is returned.
+async function hardDelete(req, res, next) {
+  try {
+    await mediaService.hardDeleteMedia(req.params.id);
     res.status(204).send();
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { upload, list, getById, stream, update, remove };
+module.exports = { upload, list, getById, stream, update, remove, hardDelete };

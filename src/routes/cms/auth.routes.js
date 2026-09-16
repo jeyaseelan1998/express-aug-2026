@@ -103,4 +103,28 @@ router.post(
  */
 router.get('/profile', requireAuth('cms'), authController.profile);
 
+/**
+ * @swagger
+ * /api/cms/auth/signout:
+ *   post:
+ *     summary: Sign out of the CMS session
+ *     tags: [CMS Auth]
+ *     description: >
+ *       Clears the httpOnly `cms_token` cookie. Tokens are stateless, so bearer
+ *       clients should discard the token on their side. Always succeeds, even
+ *       without a valid session, so clients can clean up an expired one.
+ *     responses:
+ *       200:
+ *         description: Signed out
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Signed out
+ */
+router.post('/signout', authController.signout);
+
 module.exports = router;

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const toJsonPlugin = require('./plugins/to-json.plugin');
+const softDeletePlugin = require('./plugins/soft-delete.plugin');
 
 const newsletterSchema = new mongoose.Schema(
   {
@@ -14,6 +15,7 @@ const newsletterSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+newsletterSchema.plugin(softDeletePlugin);
 newsletterSchema.plugin(toJsonPlugin);
 
 module.exports = mongoose.model('Newsletter', newsletterSchema);

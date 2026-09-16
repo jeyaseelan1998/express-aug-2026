@@ -11,8 +11,8 @@ async function serialize(doc) {
   return json;
 }
 
-async function findOrFail(id) {
-  const social = await Social.findById(id).populate('image');
+async function findOrFail(id, { withDeleted = false } = {}) {
+  const social = await Social.findById(id).setOptions({ withDeleted }).populate('image');
   if (!social) {
     throw new ApiError(404, 'Social link not found');
   }
@@ -58,9 +58,27 @@ async function updateSocial(id, { name, link, image }) {
   return serialize(social);
 }
 
+/** Soft delete: the row is kept and flagged, not removed. */
 async function deleteSocial(id) {
   const social = await findOrFail(id);
+  await social.softDelete();
+  return serialize(social);
+}
+
+/**
+ * Hard delete: removes the row for good, with no way back. Looks past the
+ * soft-delete filter so an already-deleted record can still be purged.
+ */
+async function hardDeleteSocial(id) {
+  const social = await findOrFail(id, { withDeleted: true });
   await social.deleteOne();
 }
 
-module.exports = { listSocials, getSocial, createSocial, updateSocial, deleteSocial };
+module.exports = {
+  listSocials,
+  getSocial,
+  createSocial,
+  updateSocial,
+  deleteSocial,
+  hardDeleteSocial,
+};

@@ -1,5 +1,5 @@
 const authService = require('../../services/auth.service');
-const { setAuthCookie, isWebClient } = require('../../utils/auth-cookie');
+const { setAuthCookie, clearAuthCookie, isWebClient } = require('../../utils/auth-cookie');
 
 async function signin(req, res, next) {
   try {
@@ -23,4 +23,12 @@ function profile(req, res) {
   res.status(200).json({ user: req.user });
 }
 
-module.exports = { signin, profile };
+// Tokens are stateless, so all the server can do is drop the cookie it set.
+// Bearer clients simply discard the token themselves; either way the call
+// succeeds so a client with an already-expired session can still clean up.
+function signout(req, res) {
+  clearAuthCookie(res, 'cms');
+  res.status(200).json({ message: 'Signed out' });
+}
+
+module.exports = { signin, profile, signout };

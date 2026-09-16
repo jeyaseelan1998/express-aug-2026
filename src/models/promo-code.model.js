@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const toJsonPlugin = require('./plugins/to-json.plugin');
+const softDeletePlugin = require('./plugins/soft-delete.plugin');
 
 const promoCodeSchema = new mongoose.Schema(
   {
@@ -20,6 +21,7 @@ const promoCodeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+promoCodeSchema.plugin(softDeletePlugin);
 promoCodeSchema.plugin(toJsonPlugin);
 
 module.exports = mongoose.model('PromoCode', promoCodeSchema);

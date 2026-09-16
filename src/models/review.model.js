@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const toJsonPlugin = require('./plugins/to-json.plugin');
+const softDeletePlugin = require('./plugins/soft-delete.plugin');
 
 const reviewSchema = new mongoose.Schema(
   {
@@ -35,6 +36,7 @@ const reviewSchema = new mongoose.Schema(
 // Reviews are almost always read per product, newest first.
 reviewSchema.index({ product: 1, createdAt: -1 });
 
+reviewSchema.plugin(softDeletePlugin);
 reviewSchema.plugin(toJsonPlugin);
 
 module.exports = mongoose.model('Review', reviewSchema);
