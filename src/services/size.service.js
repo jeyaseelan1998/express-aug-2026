@@ -10,12 +10,12 @@ async function findOrFail(id, { withDeleted = false } = {}) {
   return size;
 }
 
-async function listSizes(query = {}) {
+async function listSizes(query = {}, { withDeleted = false } = {}) {
   const { page, limit, skip } = paginationFrom(query);
 
   const [docs, total] = await Promise.all([
-    Size.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
-    Size.countDocuments(),
+    Size.find().setOptions({ withDeleted }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Size.countDocuments().setOptions({ withDeleted }),
   ]);
 
   return { items: docs.map((doc) => doc.toJSON()), ...pageMeta({ page, limit, total }) };

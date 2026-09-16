@@ -13,17 +13,20 @@ const requireAuth = require('../../middlewares/auth.middleware');
 
 const router = express.Router();
 
-// Signing in has to stay reachable without a token.
-router.use('/auth', authRoutes);
-
-// The media router object is shared with the web surface, so the CMS mount
-// tags the request and handlers that differ between the two can branch on it.
+// Everything mounted here is the CMS surface. Router objects and services are
+// shared with the web surface, so handlers that differ between the two -- such
+// as the lists that show soft-deleted records -- branch on this flag.
 function markCmsSurface(req, res, next) {
   req.isCmsSurface = true;
   next();
 }
 
-router.use('/media', markCmsSurface, mediaRoutes);
+router.use(markCmsSurface);
+
+// Signing in has to stay reachable without a token.
+router.use('/auth', authRoutes);
+
+router.use('/media', mediaRoutes);
 
 // Everything below requires a CMS session. cmsSignin already refuses
 // non-admin accounts, so a valid cms-scoped token implies admin rights.

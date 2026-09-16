@@ -19,12 +19,17 @@ async function findOrFail(id, { withDeleted = false } = {}) {
   return social;
 }
 
-async function listSocials(query = {}) {
+async function listSocials(query = {}, { withDeleted = false } = {}) {
   const { page, limit, skip } = paginationFrom(query);
 
   const [docs, total] = await Promise.all([
-    Social.find().populate('image').sort({ createdAt: -1 }).skip(skip).limit(limit),
-    Social.countDocuments(),
+    Social.find()
+      .setOptions({ withDeleted })
+      .populate('image')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Social.countDocuments().setOptions({ withDeleted }),
   ]);
 
   const items = await Promise.all(docs.map(serialize));

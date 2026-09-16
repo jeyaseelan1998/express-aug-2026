@@ -10,12 +10,12 @@ async function findOrFail(id, { withDeleted = false } = {}) {
   return color;
 }
 
-async function listColors(query = {}) {
+async function listColors(query = {}, { withDeleted = false } = {}) {
   const { page, limit, skip } = paginationFrom(query);
 
   const [docs, total] = await Promise.all([
-    Color.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
-    Color.countDocuments(),
+    Color.find().setOptions({ withDeleted }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Color.countDocuments().setOptions({ withDeleted }),
   ]);
 
   return { items: docs.map((doc) => doc.toJSON()), ...pageMeta({ page, limit, total }) };

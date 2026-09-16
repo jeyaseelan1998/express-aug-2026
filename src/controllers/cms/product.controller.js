@@ -2,7 +2,8 @@ const productService = require('../../services/product.service');
 
 async function list(req, res, next) {
   try {
-    const result = await productService.listProducts(req.query);
+    // The CMS surface lists soft-deleted records too, so they can be seen and purged.
+    const result = await productService.listProducts(req.query, { withDeleted: req.isCmsSurface });
     res.status(200).json(result);
   } catch (err) {
     next(err);

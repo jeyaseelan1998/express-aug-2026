@@ -10,12 +10,12 @@ async function findOrFail(id, { withDeleted = false } = {}) {
   return promoCode;
 }
 
-async function listPromoCodes(query = {}) {
+async function listPromoCodes(query = {}, { withDeleted = false } = {}) {
   const { page, limit, skip } = paginationFrom(query);
 
   const [docs, total] = await Promise.all([
-    PromoCode.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
-    PromoCode.countDocuments(),
+    PromoCode.find().setOptions({ withDeleted }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    PromoCode.countDocuments().setOptions({ withDeleted }),
   ]);
 
   return { items: docs.map((doc) => doc.toJSON()), ...pageMeta({ page, limit, total }) };

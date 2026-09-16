@@ -10,12 +10,12 @@ async function findOrFail(id, { withDeleted = false } = {}) {
   return category;
 }
 
-async function listCategories(query = {}) {
+async function listCategories(query = {}, { withDeleted = false } = {}) {
   const { page, limit, skip } = paginationFrom(query);
 
   const [docs, total] = await Promise.all([
-    Category.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
-    Category.countDocuments(),
+    Category.find().setOptions({ withDeleted }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Category.countDocuments().setOptions({ withDeleted }),
   ]);
 
   return { items: docs.map((doc) => doc.toJSON()), ...pageMeta({ page, limit, total }) };

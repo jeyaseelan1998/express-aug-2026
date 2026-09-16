@@ -76,7 +76,7 @@ async function findOrFail(id, { withDeleted = false } = {}) {
   return product;
 }
 
-async function listProducts(query = {}) {
+async function listProducts(query = {}, { withDeleted = false } = {}) {
   const { page, limit, skip } = paginationFrom(query);
 
   const filter = {};
@@ -84,8 +84,13 @@ async function listProducts(query = {}) {
   if (query.category) filter.category = query.category;
 
   const [docs, total] = await Promise.all([
-    Product.find(filter).populate(POPULATE).sort({ createdAt: -1 }).skip(skip).limit(limit),
-    Product.countDocuments(filter),
+    Product.find(filter)
+      .setOptions({ withDeleted })
+      .populate(POPULATE)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Product.countDocuments(filter).setOptions({ withDeleted }),
   ]);
 
   const items = await Promise.all(docs.map(serialize));

@@ -20,12 +20,17 @@ async function findOrFail(id, { withDeleted = false } = {}) {
   return brand;
 }
 
-async function listBrands(query = {}) {
+async function listBrands(query = {}, { withDeleted = false } = {}) {
   const { page, limit, skip } = paginationFrom(query);
 
   const [docs, total] = await Promise.all([
-    Brand.find().populate('image').sort({ createdAt: -1 }).skip(skip).limit(limit),
-    Brand.countDocuments(),
+    Brand.find()
+      .setOptions({ withDeleted })
+      .populate('image')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Brand.countDocuments().setOptions({ withDeleted }),
   ]);
 
   const items = await Promise.all(docs.map(serialize));

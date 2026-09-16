@@ -19,12 +19,17 @@ async function findOrFail(id, { withDeleted = false } = {}) {
   return style;
 }
 
-async function listStyles(query = {}) {
+async function listStyles(query = {}, { withDeleted = false } = {}) {
   const { page, limit, skip } = paginationFrom(query);
 
   const [docs, total] = await Promise.all([
-    Style.find().populate('image').sort({ createdAt: -1 }).skip(skip).limit(limit),
-    Style.countDocuments(),
+    Style.find()
+      .setOptions({ withDeleted })
+      .populate('image')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Style.countDocuments().setOptions({ withDeleted }),
   ]);
 
   const items = await Promise.all(docs.map(serialize));

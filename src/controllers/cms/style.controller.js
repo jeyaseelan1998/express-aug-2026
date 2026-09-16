@@ -2,7 +2,8 @@ const styleService = require('../../services/style.service');
 
 async function list(req, res, next) {
   try {
-    const result = await styleService.listStyles(req.query);
+    // The CMS surface lists soft-deleted records too, so they can be seen and purged.
+    const result = await styleService.listStyles(req.query, { withDeleted: req.isCmsSurface });
     res.status(200).json(result);
   } catch (err) {
     next(err);
