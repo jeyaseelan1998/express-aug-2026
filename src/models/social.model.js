@@ -15,9 +15,16 @@ const socialSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    image: {
+    // An icon name the front end resolves against its own icon set, rather
+    // than an uploaded asset -- social marks are a fixed, known set.
+    icon: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    background: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Media',
+      ref: 'Color',
       default: null,
     },
   },

@@ -1,18 +1,11 @@
 const Social = require('../models/social.model');
-const Media = require('../models/media.model');
+const Color = require('../models/color.model');
 const ApiError = require('../utils/api-error');
 const assertRefsExist = require('../utils/assert-refs');
 const { paginationFrom, pageMeta } = require('../utils/paginate');
-const { attachSignedUrl } = require('./media.service');
-
-async function serialize(doc) {
-  const json = doc.toJSON();
-  json.image = await attachSignedUrl(json.image);
-  return json;
-}
 
 async function findOrFail(id, { withDeleted = false } = {}) {
-  const social = await Social.findById(id).setOptions({ withDeleted }).populate('image');
+  const social = await Social.findById(id).setOptions({ withDeleted }).populate('background');
   if (!social) {
     throw new ApiError(404, 'Social link not found');
   }
@@ -25,49 +18,50 @@ async function listSocials(query = {}, { withDeleted = false } = {}) {
   const [docs, total] = await Promise.all([
     Social.find()
       .setOptions({ withDeleted })
-      .populate('image')
+      .populate('background')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
     Social.countDocuments().setOptions({ withDeleted }),
   ]);
 
-  const items = await Promise.all(docs.map(serialize));
-  return { items, ...pageMeta({ page, limit, total }) };
+  return { items: docs.map((doc) => doc.toJSON()), ...pageMeta({ page, limit, total }) };
 }
 
 async function getSocial(id) {
-  return serialize(await findOrFail(id));
+  const social = await findOrFail(id);
+  return social.toJSON();
 }
 
-async function createSocial({ name, link, image = null }) {
-  await assertRefsExist(Media, image, 'Media');
+async function createSocial({ name, link, icon, background = null }) {
+  await assertRefsExist(Color, background, 'Color');
 
-  const social = await Social.create({ name, link, image: image || null });
-  await social.populate('image');
-  return serialize(social);
+  const social = await Social.create({ name, link, icon, background: background || null });
+  await social.populate('background');
+  return social.toJSON();
 }
 
-async function updateSocial(id, { name, link, image }) {
+async function updateSocial(id, { name, link, icon, background }) {
   const social = await findOrFail(id);
 
   if (name !== undefined) social.name = name;
   if (link !== undefined) social.link = link;
-  if (image !== undefined) {
-    await assertRefsExist(Media, image, 'Media');
-    social.image = image || null;
+  if (icon !== undefined) social.icon = icon;
+  if (background !== undefined) {
+    await assertRefsExist(Color, background, 'Color');
+    social.background = background || null;
   }
 
   await social.save();
-  await social.populate('image');
-  return serialize(social);
+  await social.populate('background');
+  return social.toJSON();
 }
 
 /** Soft delete: the row is kept and flagged, not removed. */
 async function deleteSocial(id) {
   const social = await findOrFail(id);
   await social.softDelete();
-  return serialize(social);
+  return social.toJSON();
 }
 
 /**
@@ -77,7 +71,7 @@ async function deleteSocial(id) {
 async function restoreSocial(id) {
   const social = await findOrFail(id, { withDeleted: true });
   await social.restore();
-  return serialize(social);
+  return social.toJSON();
 }
 
 /**

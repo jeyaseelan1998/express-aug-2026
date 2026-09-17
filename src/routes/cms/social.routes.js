@@ -18,11 +18,14 @@ const router = express.Router();
  *           type: string
  *         link:
  *           type: string
- *         image:
+ *         icon:
+ *           type: string
+ *           description: Icon name the front end resolves against its own icon set
+ *         background:
  *           allOf:
- *             - $ref: '#/components/schemas/Media'
+ *             - $ref: '#/components/schemas/Color'
  *           nullable: true
- *           description: Populated media, including a fresh signed url
+ *           description: Populated colour
  *         createdAt:
  *           type: integer
  *           format: int64
@@ -69,16 +72,18 @@ const router = express.Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, link]
+ *             required: [name, link, icon]
  *             properties:
  *               name:
  *                 type: string
  *               link:
  *                 type: string
- *               image:
+ *               icon:
+ *                 type: string
+ *               background:
  *                 type: string
  *                 nullable: true
- *                 description: Media id
+ *                 description: Colour id
  *     responses:
  *       201:
  *         description: Created
@@ -113,7 +118,11 @@ router.post(
   [
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('link').trim().isURL().withMessage('link must be a valid url'),
-    body('image').optional({ values: 'null' }).isMongoId().withMessage('image must be a media id'),
+    body('icon').trim().notEmpty().withMessage('Icon is required'),
+    body('background')
+      .optional({ values: 'null' })
+      .isMongoId()
+      .withMessage('background must be a colour id'),
   ],
   validate,
   socialController.create
@@ -159,10 +168,12 @@ router.post(
  *                 type: string
  *               link:
  *                 type: string
- *               image:
+ *               icon:
+ *                 type: string
+ *               background:
  *                 type: string
  *                 nullable: true
- *                 description: Media id
+ *                 description: Colour id
  *     responses:
  *       200:
  *         description: Updated
@@ -211,7 +222,11 @@ router.put(
   [
     body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
     body('link').optional().trim().isURL().withMessage('link must be a valid url'),
-    body('image').optional({ values: 'null' }).isMongoId().withMessage('image must be a media id'),
+    body('icon').optional().trim().notEmpty().withMessage('Icon cannot be empty'),
+    body('background')
+      .optional({ values: 'null' })
+      .isMongoId()
+      .withMessage('background must be a colour id'),
   ],
   validate,
   socialController.update
