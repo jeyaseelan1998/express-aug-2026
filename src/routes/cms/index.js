@@ -9,6 +9,7 @@ const colorRoutes = require('./color.routes');
 const promoCodeRoutes = require('./promo-code.routes');
 const sizeRoutes = require('./size.routes');
 const socialRoutes = require('./social.routes');
+const pageRoutes = require('./page.routes');
 const requireAuth = require('../../middlewares/auth.middleware');
 
 const router = express.Router();
@@ -40,5 +41,6 @@ router.use('/color', requireCmsAuth, colorRoutes);
 router.use('/promo-code', requireCmsAuth, promoCodeRoutes);
 router.use('/size', requireCmsAuth, sizeRoutes);
 router.use('/social', requireCmsAuth, socialRoutes);
+router.use('/page', requireCmsAuth, pageRoutes);
 
 module.exports = router;
