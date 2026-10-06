@@ -1,6 +1,6 @@
 const Page = require('../models/page.model');
 const Media = require('../models/media.model');
-const { WIDGET_MEDIA_PATHS, WIDGET_POPULATE } = require('../models/widgets');
+const { WIDGET_MEDIA_PATHS, WIDGET_REF_PATHS, WIDGET_POPULATE } = require('../models/widgets');
 const ApiError = require('../utils/api-error');
 const assertRefsExist = require('../utils/assert-refs');
 const { paginationFrom, pageMeta } = require('../utils/paginate');
@@ -15,15 +15,32 @@ function widgetMediaIds(widgets = []) {
   );
 }
 
-/** Signs every media ref a widget declares -- objects in S3 stay private. */
-async function signWidget(widget) {
-  const paths = WIDGET_MEDIA_PATHS[widget?.type] || [];
-  if (!paths.length) return widget;
+/** Signs the named media refs on a populated document. */
+async function signMedia(entity, paths) {
+  if (!entity || typeof entity !== 'object' || !paths.length) return entity;
 
-  const signed = { ...widget };
+  const signed = { ...entity };
   await Promise.all(
     paths.map(async (path) => {
       signed[path] = await attachSignedUrl(signed[path]);
+    })
+  );
+  return signed;
+}
+
+/**
+ * Signs every media ref a widget declares, including the media on the
+ * documents it references (a brand's logo) -- objects in S3 stay private.
+ */
+async function signWidget(widget) {
+  const signed = await signMedia(widget, WIDGET_MEDIA_PATHS[widget?.type] || []);
+  const refs = WIDGET_REF_PATHS[widget?.type] || [];
+  await Promise.all(
+    refs.map(async ({ path, media = [] }) => {
+      const value = signed[path];
+      signed[path] = Array.isArray(value)
+        ? await Promise.all(value.map((entity) => signMedia(entity, media)))
+        : await signMedia(value, media);
     })
   );
   return signed;

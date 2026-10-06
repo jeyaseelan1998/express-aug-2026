@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
 const heroWidget = require('./hero.widget');
+const brandsWidget = require('./brands.widget');
 
 /**
  * Every widget a page can hold. Adding a widget type means dropping a
  * `<name>.widget.js` file in this directory and listing it here -- the page
  * model, service and routes need no change.
  */
-const widgets = [heroWidget];
+const widgets = [heroWidget, brandsWidget];
 
 /**
  * The shape shared by every widget in a page's `widgets` array. It carries no
@@ -32,11 +33,28 @@ const WIDGET_MEDIA_PATHS = Object.fromEntries(
 );
 
 /**
- * The populate paths a page read needs to resolve every widget's media in one
- * query. Deduplicated, since two widget types may name the same field.
+ * Other refs held by each widget type, with the fields to return and the
+ * media on each referenced document, e.g.
+ * `{ brands: [{ path: 'brands', select: 'name image', media: ['image'] }] }`.
+ */
+const WIDGET_REF_PATHS = Object.fromEntries(
+  widgets.map((widget) => [widget.type, widget.refs || []])
+);
+
+/**
+ * The populate paths a page read needs to resolve every widget's media and
+ * refs in one query. Media paths are deduplicated, since two widget types may
+ * name the same field.
  */
 const WIDGET_POPULATE = [
   ...new Set(widgets.flatMap((widget) => (widget.media || []).map((path) => `widgets.${path}`))),
+  ...widgets.flatMap((widget) =>
+    (widget.refs || []).map(({ path, select, media = [] }) => ({
+      path: `widgets.${path}`,
+      select,
+      populate: media.map((mediaPath) => ({ path: mediaPath })),
+    }))
+  ),
 ];
 
 module.exports = {
@@ -44,5 +62,6 @@ module.exports = {
   registerWidgets,
   WIDGET_TYPES,
   WIDGET_MEDIA_PATHS,
+  WIDGET_REF_PATHS,
   WIDGET_POPULATE,
 };

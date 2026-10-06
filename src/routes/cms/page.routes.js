@@ -53,12 +53,40 @@ const router = express.Router();
  *               label:
  *                 type: string
  *                 example: International Brands
+ *     BrandsWidget:
+ *       type: object
+ *       description: A row of brands. `type` is always `brands`.
+ *       required: [type]
+ *       properties:
+ *         _id:
+ *           type: string
+ *         type:
+ *           type: string
+ *           enum: [brands]
+ *         brands:
+ *           type: array
+ *           description: >
+ *             Populated brands in display order, each `image` with a short-lived
+ *             signed url. Sent as brand ids on create and update. Soft-deleted
+ *             brands are left out.
+ *           items:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               image:
+ *                 allOf:
+ *                   - $ref: '#/components/schemas/Media'
+ *                 nullable: true
  *     Widget:
  *       description: >
- *         A page widget. The `type` field selects the shape -- `hero` is the
- *         only type so far, and further widget types are added alongside it.
+ *         A page widget. The `type` field selects the shape -- `hero` or
+ *         `brands`, and further widget types are added alongside them.
  *       oneOf:
  *         - $ref: '#/components/schemas/HeroWidget'
+ *         - $ref: '#/components/schemas/BrandsWidget'
  *       discriminator:
  *         propertyName: type
  *     Page:
@@ -205,6 +233,8 @@ const widgetRules = [
     .isIn(WIDGET_TYPES)
     .withMessage(`Each widget needs a type of: ${WIDGET_TYPES.join(', ')}`),
   body('widgets.*.image').optional().isMongoId().withMessage('image must be a valid media id'),
+  body('widgets.*.brands').optional().isArray().withMessage('brands must be an array'),
+  body('widgets.*.brands.*').isMongoId().withMessage('brands must be valid brand ids'),
 ];
 
 const statusRule = body('status')
