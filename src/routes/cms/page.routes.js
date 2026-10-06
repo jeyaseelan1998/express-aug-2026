@@ -81,6 +81,15 @@ const router = express.Router();
  *         metaDescription:
  *           type: string
  *           nullable: true
+ *         keywords:
+ *           type: array
+ *           items:
+ *             type: string
+ *         ogImage:
+ *           allOf:
+ *             - $ref: '#/components/schemas/Media'
+ *           nullable: true
+ *           description: Populated media, with a short-lived signed url
  *         widgets:
  *           type: array
  *           description: Render order is array order
@@ -154,6 +163,14 @@ const router = express.Router();
  *               metaDescription:
  *                 type: string
  *                 nullable: true
+ *               keywords:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               ogImage:
+ *                 type: string
+ *                 nullable: true
+ *                 description: Media id
  *               widgets:
  *                 type: array
  *                 description: Widget media fields (a hero's `image`) are sent as media ids
@@ -199,6 +216,12 @@ const statusRule = body('status')
 const metaRules = [
   body('metaTitle').optional({ values: 'null' }).isString().trim(),
   body('metaDescription').optional({ values: 'null' }).isString().trim(),
+  body('keywords').optional().isArray().withMessage('keywords must be an array'),
+  body('keywords.*').optional().isString().trim().notEmpty(),
+  body('ogImage')
+    .optional({ values: 'null' })
+    .isMongoId()
+    .withMessage('ogImage must be a media id'),
 ];
 
 // A factory rather than a shared chain: `.optional()` mutates the chain it is
@@ -293,6 +316,14 @@ router.post(
  *               metaDescription:
  *                 type: string
  *                 nullable: true
+ *               keywords:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               ogImage:
+ *                 type: string
+ *                 nullable: true
+ *                 description: Media id
  *               widgets:
  *                 type: array
  *                 description: Widget media fields (a hero's `image`) are sent as media ids

@@ -41,6 +41,15 @@ const pageSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    keywords: {
+      type: [String],
+      default: [],
+    },
+    ogImage: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Media',
+      default: null,
+    },
     // Ordered: the array order is the order the widgets render in.
     widgets: {
       type: [widgetSchema],

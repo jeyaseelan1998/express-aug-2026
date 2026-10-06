@@ -6,6 +6,8 @@ const assertRefsExist = require('../utils/assert-refs');
 const { paginationFrom, pageMeta } = require('../utils/paginate');
 const { attachSignedUrl } = require('./media.service');
 
+const POPULATE = ['ogImage', ...WIDGET_POPULATE];
+
 /** The media ids a widget list references, whatever the widget types are. */
 function widgetMediaIds(widgets = []) {
   return (widgets || []).flatMap((widget) =>
@@ -29,21 +31,22 @@ async function signWidget(widget) {
 
 async function serialize(doc) {
   const json = doc.toJSON();
+  json.ogImage = await attachSignedUrl(json.ogImage);
   json.widgets = await Promise.all((json.widgets || []).map(signWidget));
   return json;
 }
 
 /**
- * Rejects the write if a widget points at media that does not exist, so a
- * page can never be stored holding a dangling image ref.
+ * Rejects the write if the og image or a widget points at media that does not
+ * exist, so a page can never be stored holding a dangling image ref.
  */
 async function assertPayloadRefs(payload) {
-  if (payload.widgets === undefined) return;
-  await assertRefsExist(Media, widgetMediaIds(payload.widgets), 'Media');
+  const ids = [payload.ogImage, ...widgetMediaIds(payload.widgets)];
+  await assertRefsExist(Media, ids, 'Media');
 }
 
 async function findOrFail(id, { withDeleted = false } = {}) {
-  const page = await Page.findById(id).setOptions({ withDeleted }).populate(WIDGET_POPULATE);
+  const page = await Page.findById(id).setOptions({ withDeleted }).populate(POPULATE);
   if (!page) {
     throw new ApiError(404, 'Page not found');
   }
@@ -60,7 +63,7 @@ async function listPages(query = {}, { withDeleted = false } = {}) {
   const [docs, total] = await Promise.all([
     Page.find(filter)
       .setOptions({ withDeleted })
-      .populate(WIDGET_POPULATE)
+      .populate(POPULATE)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -84,14 +87,23 @@ async function getPageBySlug(slug) {
   const page = await Page.findOne({
     slug: String(slug).toLowerCase(),
     status: Page.PUBLISHED,
-  }).populate(WIDGET_POPULATE);
+  }).populate(POPULATE);
   if (!page) {
     throw new ApiError(404, 'Page not found');
   }
   return serialize(page);
 }
 
-const WRITABLE_FIELDS = ['title', 'slug', 'status', 'metaTitle', 'metaDescription', 'widgets'];
+const WRITABLE_FIELDS = [
+  'title',
+  'slug',
+  'status',
+  'metaTitle',
+  'metaDescription',
+  'keywords',
+  'ogImage',
+  'widgets',
+];
 
 function pickWritable(payload) {
   return WRITABLE_FIELDS.reduce((acc, field) => {
@@ -105,7 +117,7 @@ async function createPage(payload) {
   await assertPayloadRefs(data);
 
   const page = await Page.create(data);
-  await page.populate(WIDGET_POPULATE);
+  await page.populate(POPULATE);
   return serialize(page);
 }
 
@@ -120,7 +132,7 @@ async function updatePage(id, payload) {
 
   Object.assign(page, data);
   await page.save();
-  await page.populate(WIDGET_POPULATE);
+  await page.populate(POPULATE);
   return serialize(page);
 }
 
