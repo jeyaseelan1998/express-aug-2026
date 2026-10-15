@@ -1,0 +1,354 @@
+# Product endpoints (CMS).
+# Loaded by src/config/swagger.js; served at /api-docs.
+
+components:
+  schemas:
+    ProductFaq:
+      type: object
+      properties:
+        id:
+          type: string
+        question:
+          type: string
+        answer:
+          type: string
+    ProductStock:
+      type: object
+      properties:
+        id:
+          type: string
+        stock:
+          type: integer
+        size:
+          $ref: '#/components/schemas/Size'
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        thumbnail:
+          allOf:
+            - $ref: '#/components/schemas/Media'
+          description: Populated media, including a fresh signed url
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Media'
+        rating:
+          type: number
+          description: 0-5, decimals allowed
+        price:
+          type: number
+        discount:
+          type: number
+          description: Percentage, 0-100
+        description:
+          type: string
+        details:
+          type: string
+        faq:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductFaq'
+        category:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        color:
+          type: array
+          items:
+            $ref: '#/components/schemas/Color'
+        style:
+          type: array
+          items:
+            $ref: '#/components/schemas/Style'
+        stock:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductStock'
+        shipping:
+          type: number
+        brand:
+          allOf:
+            - $ref: '#/components/schemas/Brand'
+          nullable: true
+        minUnit:
+          type: integer
+        maxUnit:
+          type: integer
+          nullable: true
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+    ProductInput:
+      type: object
+      properties:
+        name:
+          type: string
+        thumbnail:
+          type: string
+          description: Media id
+        images:
+          type: array
+          items:
+            type: string
+        rating:
+          type: number
+        price:
+          type: number
+        discount:
+          type: number
+        description:
+          type: string
+        details:
+          type: string
+        faq:
+          type: array
+          items:
+            type: object
+            required: [question, answer]
+            properties:
+              question:
+                type: string
+              answer:
+                type: string
+        category:
+          type: array
+          items:
+            type: string
+        color:
+          type: array
+          items:
+            type: string
+        style:
+          type: array
+          items:
+            type: string
+        stock:
+          type: array
+          items:
+            type: object
+            required: [stock, size]
+            properties:
+              stock:
+                type: integer
+              size:
+                type: string
+                description: Size id
+        shipping:
+          type: number
+        brand:
+          type: string
+          nullable: true
+        minUnit:
+          type: integer
+        maxUnit:
+          type: integer
+          nullable: true
+
+/api/cms/product:
+  get:
+    summary: List products
+    description: >
+      Media, category, colour, style, brand and stock size refs are all
+      populated, and every media ref carries a fresh signed url.
+    tags: [CMS Product]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - in: query
+        name: brand
+        schema:
+          type: string
+        description: Filter by brand id
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: Filter by category id
+    responses:
+      200:
+        description: Page of products
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Product'
+                - $ref: '#/components/schemas/PageMeta'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      403:
+        $ref: '#/components/responses/WrongScope'
+  post:
+    summary: Create a product
+    description: >
+      Every referenced id is checked for existence first, so a product can
+      never be stored pointing at a missing media, category, colour, style,
+      brand or size.
+    tags: [CMS Product]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ProductInput'
+              - type: object
+                required: [name, thumbnail, price]
+    responses:
+      201:
+        description: Created
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product:
+                  $ref: '#/components/schemas/Product'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      422:
+        $ref: '#/components/responses/RefNotFound'
+
+/api/cms/product/{id}:
+  get:
+    summary: Get a product by id
+    tags: [CMS Product]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      200:
+        description: The product
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product:
+                  $ref: '#/components/schemas/Product'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+  put:
+    summary: Update a product
+    description: Partial update. Only the fields present in the body are changed.
+    tags: [CMS Product]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProductInput'
+    responses:
+      200:
+        description: Updated
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product:
+                  $ref: '#/components/schemas/Product'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+      422:
+        $ref: '#/components/responses/RefNotFound'
+  delete:
+    summary: Permanently delete a product
+    description: >
+      Hard delete. Removes the row outright, with no way back -- use the
+      `PATCH /{id}/delete` soft delete unless the record must genuinely be
+      purged. Works on already soft-deleted records too. Anything still
+      referencing this id is left pointing at nothing.
+    tags: [CMS Product]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      204:
+        description: Permanently deleted
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+
+/api/cms/product/{id}/delete:
+  patch:
+    summary: Delete a product
+    description: >
+      Soft delete. Sets `deleted` to 1 and returns the updated record; the
+      row is kept but stops appearing in any list or lookup. Deleting an
+      already-deleted record returns 404, since it is no longer visible.
+    tags: [CMS Product]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      200:
+        description: Deleted
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product:
+                  $ref: '#/components/schemas/Product'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+
+/api/cms/product/{id}/restore:
+  patch:
+    summary: Restore a product
+    description: >
+      Undoes a soft delete. Sets `deleted` back to 0 and returns the
+      record, which shows up in ordinary lists and lookups again. Restoring
+      a record that is not deleted leaves it as it is.
+    tags: [CMS Product]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      200:
+        description: Restored
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product:
+                  $ref: '#/components/schemas/Product'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'

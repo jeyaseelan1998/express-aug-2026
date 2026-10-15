@@ -5,7 +5,7 @@ const swaggerUi = require('swagger-ui-express');
 const indexRouter = require('./routes/index');
 const swaggerSpec = require('./config/swagger');
 const { corsOptions } = require('./config/cors');
-const { notFound, errorHandler } = require('./middlewares/error.middleware');
+const { notFound, errorHandler } = require('./core/middlewares/error.middleware');
 
 const app = express();
 

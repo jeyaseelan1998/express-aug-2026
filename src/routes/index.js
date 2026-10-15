@@ -1,6 +1,6 @@
 const express = require('express');
-const webRoutes = require('./web');
-const cmsRoutes = require('./cms');
+const webRoutes = require('./web.routes');
+const cmsRoutes = require('./cms.routes');
 
 const router = express.Router();
 

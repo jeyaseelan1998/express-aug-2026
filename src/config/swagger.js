@@ -1,3 +1,4 @@
+const path = require('path');
 const swaggerJsdoc = require('swagger-jsdoc');
 
 const options = {
@@ -106,7 +107,9 @@ const options = {
       { name: 'CMS Page', description: 'CMS page and widget management' },
     ],
   },
-  apis: ['./src/routes/**/*.js'],
+  // Absolute, so the docs load no matter which directory the server is started
+  // from. Each module keeps its endpoint docs in `<name>.docs.yaml`.
+  apis: [path.join(__dirname, '../routes/*.js'), path.join(__dirname, '../modules/**/*.docs.yaml')],
 };
 
 module.exports = swaggerJsdoc(options);

@@ -1,4 +1,4 @@
-const ApiError = require('../utils/api-error');
+const ApiError = require('../core/api-error');
 
 // Trailing slashes never appear in a browser's Origin header, so strip them
 // from configured values to keep `https://foo.com/` and `https://foo.com` equal.

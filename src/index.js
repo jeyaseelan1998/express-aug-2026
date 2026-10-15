@@ -3,7 +3,7 @@ const app = require('./app');
 const connectDB = require('./config/db');
 const { assertConfigured: assertS3Configured } = require('./config/s3');
 const { assertConfigured: assertCorsConfigured } = require('./config/cors');
-// const seedRoles = require('./utils/seed-roles');
+// const seedRoles = require('./modules/auth/seed-roles');
 
 const PORT = process.env.PORT || 3000;
 

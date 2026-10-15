@@ -1,0 +1,405 @@
+# Page endpoints (CMS management + web lookup by slug).
+# Loaded by src/config/swagger.js; served at /api-docs.
+
+components:
+  schemas:
+    HeroWidget:
+      type: object
+      description: Hero banner. `type` is always `hero`.
+      required: [type, title, image]
+      properties:
+        _id:
+          type: string
+        type:
+          type: string
+          enum: [hero]
+        title:
+          type: string
+        text:
+          type: string
+          nullable: true
+        image:
+          allOf:
+            - $ref: '#/components/schemas/Media'
+          description: Populated media, with a short-lived signed url
+        button:
+          type: object
+          nullable: true
+          required: [label]
+          properties:
+            label:
+              type: string
+            link:
+              type: string
+              nullable: true
+        stats:
+          type: array
+          items:
+            type: object
+            required: [unit, label]
+            properties:
+              _id:
+                type: string
+              unit:
+                type: string
+                example: 200+
+              label:
+                type: string
+                example: International Brands
+    BrandsWidget:
+      type: object
+      description: A row of brands. `type` is always `brands`.
+      required: [type]
+      properties:
+        _id:
+          type: string
+        type:
+          type: string
+          enum: [brands]
+        brands:
+          type: array
+          description: >
+            Populated brands in display order, each `image` with a short-lived
+            signed url. Sent as brand ids on create and update. Soft-deleted
+            brands are left out.
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              image:
+                allOf:
+                  - $ref: '#/components/schemas/Media'
+                nullable: true
+    Widget:
+      description: >
+        A page widget. The `type` field selects the shape -- `hero` or
+        `brands`, and further widget types are added alongside them.
+      oneOf:
+        - $ref: '#/components/schemas/HeroWidget'
+        - $ref: '#/components/schemas/BrandsWidget'
+      discriminator:
+        propertyName: type
+    Page:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+          description: Lowercase, hyphen-separated; how the front end addresses the page
+        status:
+          type: integer
+          enum: [0, 1]
+          description: 0 = draft, 1 = published. Only published pages are served to the public site.
+        metaTitle:
+          type: string
+          nullable: true
+        metaDescription:
+          type: string
+          nullable: true
+        keywords:
+          type: array
+          items:
+            type: string
+        ogImage:
+          allOf:
+            - $ref: '#/components/schemas/Media'
+          nullable: true
+          description: Populated media, with a short-lived signed url
+        widgets:
+          type: array
+          description: Render order is array order
+          items:
+            $ref: '#/components/schemas/Widget'
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+
+/api/cms/page:
+  get:
+    summary: List pages
+    tags: [CMS Page]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - in: query
+        name: status
+        schema:
+          type: integer
+          enum: [0, 1]
+        description: Filter by 0 = draft, 1 = published. Omit for both.
+    responses:
+      200:
+        description: Page of pages
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Page'
+                - $ref: '#/components/schemas/PageMeta'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      403:
+        $ref: '#/components/responses/WrongScope'
+  post:
+    summary: Create a page
+    tags: [CMS Page]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [title, slug]
+            properties:
+              title:
+                type: string
+              slug:
+                type: string
+              status:
+                type: integer
+                enum: [0, 1]
+                description: 0 = draft (the default for a new page), 1 = published
+              metaTitle:
+                type: string
+                nullable: true
+              metaDescription:
+                type: string
+                nullable: true
+              keywords:
+                type: array
+                items:
+                  type: string
+              ogImage:
+                type: string
+                nullable: true
+                description: Media id
+              widgets:
+                type: array
+                description: Widget media fields (a hero's `image`) are sent as media ids
+                items:
+                  $ref: '#/components/schemas/Widget'
+    responses:
+      201:
+        description: Created
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  $ref: '#/components/schemas/Page'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      409:
+        $ref: '#/components/responses/Conflict'
+      422:
+        $ref: '#/components/responses/RefNotFound'
+
+/api/cms/page/{id}:
+  get:
+    summary: Get a page by id
+    tags: [CMS Page]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      200:
+        description: The page
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  $ref: '#/components/schemas/Page'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+  put:
+    summary: Update a page
+    description: >
+      `widgets` is replaced wholesale when sent -- the array order is the
+      render order, so send the full list the page should end up with.
+    tags: [CMS Page]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              slug:
+                type: string
+              status:
+                type: integer
+                enum: [0, 1]
+                description: 0 = draft (the default for a new page), 1 = published
+              metaTitle:
+                type: string
+                nullable: true
+              metaDescription:
+                type: string
+                nullable: true
+              keywords:
+                type: array
+                items:
+                  type: string
+              ogImage:
+                type: string
+                nullable: true
+                description: Media id
+              widgets:
+                type: array
+                description: Widget media fields (a hero's `image`) are sent as media ids
+                items:
+                  $ref: '#/components/schemas/Widget'
+    responses:
+      200:
+        description: Updated
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  $ref: '#/components/schemas/Page'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+      409:
+        $ref: '#/components/responses/Conflict'
+      422:
+        $ref: '#/components/responses/RefNotFound'
+  delete:
+    summary: Permanently delete a page
+    description: >
+      Hard delete. Removes the row outright, with no way back -- use the
+      `PATCH /{id}/delete` soft delete unless the record must genuinely be
+      purged. Works on already soft-deleted records too.
+    tags: [CMS Page]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      204:
+        description: Permanently deleted
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+
+/api/cms/page/{id}/delete:
+  patch:
+    summary: Delete a page
+    description: >
+      Soft delete. Sets `deleted` to 1 and returns the updated record; the
+      row is kept but stops appearing in any list or lookup. Deleting an
+      already-deleted record returns 404, since it is no longer visible.
+    tags: [CMS Page]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      200:
+        description: Deleted
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  $ref: '#/components/schemas/Page'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+
+/api/cms/page/{id}/restore:
+  patch:
+    summary: Restore a page
+    description: >
+      Undoes a soft delete. Sets `deleted` back to 0 and returns the
+      record, which shows up in ordinary lists and lookups again. Restoring
+      a record that is not deleted leaves it as it is.
+    tags: [CMS Page]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      200:
+        description: Restored
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  $ref: '#/components/schemas/Page'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+
+/api/web/page/{slug}:
+  get:
+    summary: Get a page by slug
+    description: >
+      Page details, with the widgets in render order. Public: no session is
+      needed. Only published pages are served -- a draft or soft-deleted
+      page answers 404, so an unpublished slug gives nothing away.
+    tags: [Web Page]
+    parameters:
+      - in: path
+        name: slug
+        required: true
+        schema:
+          type: string
+        description: Lowercase, hyphen-separated page slug
+        example: home
+    responses:
+      200:
+        description: The page
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  $ref: '#/components/schemas/Page'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      404:
+        $ref: '#/components/responses/NotFoundError'
