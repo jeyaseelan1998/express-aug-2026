@@ -10,13 +10,17 @@ const userService = require('./user.service');
 const roleRule = () =>
   body('role').optional().isMongoId().withMessage('role must be a valid role id');
 
-/** Deleting your own account would end your session and lock you out. */
-function notSelf(req, _res, next) {
-  if (req.user && String(req.user.id) === req.params.id) {
-    return next(new ApiError(400, 'You cannot delete your own account'));
-  }
-  next();
-}
+/** Guards actions an admin should not take on their own account. */
+const notSelf = (message) =>
+  function rejectSelf(req, _res, next) {
+    if (req.user && String(req.user.id) === req.params.id) {
+      return next(new ApiError(400, message));
+    }
+    next();
+  };
+
+// Deleting your own account would end your session and lock you out.
+const notSelfDelete = notSelf('You cannot delete your own account');
 
 // Docs: user.docs.yaml
 const router = express.Router();
@@ -31,8 +35,17 @@ router.get(
   })
 );
 
-router.patch('/:id/delete', notSelf);
-router.delete('/:id', notSelf);
+router.patch(
+  '/:id/logout',
+  validateId(),
+  notSelf('Use Logout in the menu to sign yourself out'),
+  asyncHandler(async (req, res) => {
+    res.status(200).json({ user: await userService.logout(req.params.id) });
+  })
+);
+
+router.patch('/:id/delete', notSelfDelete);
+router.delete('/:id', notSelfDelete);
 
 router.use(
   createCrudRouter({

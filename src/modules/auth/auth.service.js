@@ -15,7 +15,7 @@ const CMS_ROLES = ['admin', 'superadmin'];
 function startSession(user, scope, context) {
   loginHistory.record({ user: user._id, scope, success: true, ...context });
   markSignedIn(user);
-  return { user, token: signToken({ sub: user.id, scope }) };
+  return { user, token: signToken({ sub: user.id, scope, sv: user.sessionVersion ?? 0 }) };
 }
 
 async function signup({ name, email, password }, context = {}) {

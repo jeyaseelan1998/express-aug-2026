@@ -288,3 +288,36 @@ components:
         $ref: '#/components/responses/Unauthorized'
       404:
         $ref: '#/components/responses/NotFoundError'
+
+/api/cms/users/{id}/logout:
+  patch:
+    summary: Log a user out everywhere
+    description: >
+      Ends every session the user has -- website and CMS, on every device.
+      Their next request gets a 401 and they have to sign in again. Also
+      marks them offline. You cannot log yourself out this way; use the
+      normal sign-out instead.
+    tags: [CMS User]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      200:
+        description: Logged out
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+      400:
+        description: Invalid id, or the id is your own account
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'

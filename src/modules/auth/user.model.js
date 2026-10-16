@@ -36,6 +36,12 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Copied into every token at sign-in. Bumping it ends all of the user's
+    // sessions at once, since requireAuth rejects tokens carrying an older one.
+    sessionVersion: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
@@ -51,6 +57,9 @@ userSchema.methods.comparePassword = function comparePassword(candidate) {
 };
 
 userSchema.plugin(softDeletePlugin);
-userSchema.plugin(toJsonPlugin, { hide: ['password'], dates: ['lastLoginAt', 'lastSeenAt'] });
+userSchema.plugin(toJsonPlugin, {
+  hide: ['password', 'sessionVersion'],
+  dates: ['lastLoginAt', 'lastSeenAt'],
+});
 
 module.exports = mongoose.model('User', userSchema);

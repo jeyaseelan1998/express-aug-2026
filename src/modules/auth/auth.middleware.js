@@ -45,6 +45,12 @@ function requireAuth(scope = 'web') {
         throw new ApiError(401, 'Account no longer exists');
       }
 
+      // Tokens minted before sessionVersion existed carry no `sv`: they count
+      // as version 0, so introducing it signed nobody out.
+      if ((payload.sv ?? 0) !== (user.sessionVersion ?? 0)) {
+        throw new ApiError(401, 'Your session has ended. Please sign in again.');
+      }
+
       touchLastSeen(user);
       req.user = user;
       next();

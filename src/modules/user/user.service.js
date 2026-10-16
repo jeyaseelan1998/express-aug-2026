@@ -1,5 +1,5 @@
 const createCrudService = require('../../core/crud/crud.service');
-const { presenceOf } = require('../auth/activity');
+const { endAllSessions, presenceOf } = require('../auth/activity');
 const Role = require('../auth/role.model');
 const User = require('../auth/user.model');
 const loginHistory = require('../login-history/login-history.service');
@@ -35,4 +35,11 @@ async function getLoginHistory(id, query) {
   return loginHistory.listForUser(id, query);
 }
 
-module.exports = { ...crud, create, hardDelete, getLoginHistory };
+/** Signs the user out everywhere: website and CMS, on every device. */
+async function logout(id) {
+  await crud.findOrFail(id);
+  await endAllSessions(id);
+  return crud.getById(id);
+}
+
+module.exports = { ...crud, create, hardDelete, getLoginHistory, logout };
