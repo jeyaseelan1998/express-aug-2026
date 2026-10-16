@@ -1,0 +1,34 @@
+# User endpoints (CMS).
+# Loaded by src/config/swagger.js; served at /api-docs.
+
+/api/cms/users:
+  get:
+    summary: List users
+    description: >
+      Newest first. Includes soft-deleted accounts (`deleted: 1`), like every
+      other CMS list. Each user's role is populated; passwords are never returned.
+    tags: [CMS User]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+    responses:
+      200:
+        description: Page of users
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/User'
+                - $ref: '#/components/schemas/PageMeta'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      403:
+        $ref: '#/components/responses/WrongScope'
