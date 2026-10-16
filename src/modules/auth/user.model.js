@@ -27,6 +27,15 @@ const userSchema = new mongoose.Schema(
       ref: 'Role',
       required: true,
     },
+    // Activity, maintained by auth/activity.js rather than written directly.
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
+    lastSeenAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -42,6 +51,6 @@ userSchema.methods.comparePassword = function comparePassword(candidate) {
 };
 
 userSchema.plugin(softDeletePlugin);
-userSchema.plugin(toJsonPlugin, { hide: ['password'] });
+userSchema.plugin(toJsonPlugin, { hide: ['password'], dates: ['lastLoginAt', 'lastSeenAt'] });
 
 module.exports = mongoose.model('User', userSchema);

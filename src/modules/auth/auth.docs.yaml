@@ -6,7 +6,7 @@ components:
     User:
       type: object
       properties:
-        _id:
+        id:
           type: string
         name:
           type: string
@@ -25,6 +25,24 @@ components:
               type: array
               items:
                 type: string
+        lastLoginAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: Unix timestamp (seconds) of the last successful sign-in
+        lastSeenAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: >
+            Unix timestamp (seconds) of the last authenticated request, refreshed
+            at most once a minute; cleared on sign-out
+        status:
+          type: string
+          enum: [online, offline]
+          description: >
+            Returned by the CMS user endpoints. `online` when seen in the last
+            5 minutes.
         createdAt:
           type: integer
           format: int64

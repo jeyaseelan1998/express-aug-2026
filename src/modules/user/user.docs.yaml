@@ -1,6 +1,37 @@
 # User endpoints (CMS).
 # Loaded by src/config/swagger.js; served at /api-docs.
 
+components:
+  schemas:
+    LoginHistory:
+      type: object
+      properties:
+        id:
+          type: string
+        user:
+          type: string
+          description: User id
+        scope:
+          type: string
+          enum: [web, cms]
+          description: Which surface the sign-in was for
+        success:
+          type: boolean
+        reason:
+          type: string
+          nullable: true
+          enum: [invalid_password, not_admin, null]
+          description: Why a failed attempt failed
+        ip:
+          type: string
+          nullable: true
+        userAgent:
+          type: string
+          nullable: true
+        createdAt:
+          type: integer
+          format: int64
+
 /api/cms/users:
   get:
     summary: List users
@@ -32,3 +63,228 @@
         $ref: '#/components/responses/Unauthorized'
       403:
         $ref: '#/components/responses/WrongScope'
+  post:
+    summary: Create a user
+    description: >
+      The password is hashed before it is stored and is never returned.
+      Without a `role`, the account gets the `user` role, like a web signup.
+    tags: [CMS User]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name, email, password]
+            properties:
+              name:
+                type: string
+              email:
+                type: string
+                format: email
+              password:
+                type: string
+                minLength: 8
+              role:
+                type: string
+                description: Role id. Defaults to the `user` role.
+    responses:
+      201:
+        description: Created
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      409:
+        $ref: '#/components/responses/Conflict'
+      422:
+        $ref: '#/components/responses/RefNotFound'
+
+/api/cms/users/{id}:
+  get:
+    summary: Get a user by id
+    tags: [CMS User]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      200:
+        description: The user
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+  put:
+    summary: Update a user
+    description: Send `password` only to change it; omit it to keep the current one.
+    tags: [CMS User]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              email:
+                type: string
+                format: email
+              password:
+                type: string
+                minLength: 8
+              role:
+                type: string
+                description: Role id
+    responses:
+      200:
+        description: Updated
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+      409:
+        $ref: '#/components/responses/Conflict'
+      422:
+        $ref: '#/components/responses/RefNotFound'
+  delete:
+    summary: Permanently delete a user
+    description: >
+      Hard delete. Removes the account outright, with no way back -- use the
+      `PATCH /{id}/delete` soft delete unless it must genuinely be purged.
+      You cannot delete your own account.
+    tags: [CMS User]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      204:
+        description: Permanently deleted
+      400:
+        description: Invalid id, or the id is your own account
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+
+/api/cms/users/{id}/delete:
+  patch:
+    summary: Delete a user
+    description: >
+      Soft delete. Sets `deleted` to 1; the account can no longer sign in or
+      use an existing session. You cannot delete your own account.
+    tags: [CMS User]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      200:
+        description: Deleted
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+      400:
+        description: Invalid id, or the id is your own account
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+
+/api/cms/users/{id}/restore:
+  patch:
+    summary: Restore a user
+    description: Undoes a soft delete, so the account can sign in again.
+    tags: [CMS User]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+    responses:
+      200:
+        description: Restored
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'
+
+/api/cms/users/{id}/login-history:
+  get:
+    summary: Login history of a user
+    description: >
+      Sign-in attempts on this account, newest first: successful sign-ins and
+      signups, wrong passwords, and non-admins trying the CMS. Attempts with an
+      unknown email are not recorded. Rows expire after
+      LOGIN_HISTORY_RETENTION_DAYS (default 90). Works for soft-deleted users.
+    tags: [CMS User]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+    responses:
+      200:
+        description: Page of login attempts
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/LoginHistory'
+                - $ref: '#/components/schemas/PageMeta'
+      400:
+        $ref: '#/components/responses/ValidationFailed'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        $ref: '#/components/responses/NotFoundError'

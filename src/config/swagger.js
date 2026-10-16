@@ -106,6 +106,7 @@ const options = {
       { name: 'CMS Social', description: 'CMS social link management' },
       { name: 'CMS Page', description: 'CMS page and widget management' },
       { name: 'CMS User', description: 'CMS user management' },
+      { name: 'CMS Role', description: 'CMS roles (read-only)' },
     ],
   },
   // Absolute, so the docs load no matter which directory the server is started

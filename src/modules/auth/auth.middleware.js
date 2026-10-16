@@ -2,6 +2,7 @@ const User = require('./user.model');
 const ApiError = require('../../core/api-error');
 const { verifyToken } = require('./jwt');
 const { COOKIE_NAMES } = require('./auth-cookie');
+const { touchLastSeen } = require('./activity');
 
 function extractToken(req, scope) {
   const header = req.headers.authorization || '';
@@ -44,6 +45,7 @@ function requireAuth(scope = 'web') {
         throw new ApiError(401, 'Account no longer exists');
       }
 
+      touchLastSeen(user);
       req.user = user;
       next();
     } catch (err) {
@@ -53,3 +55,4 @@ function requireAuth(scope = 'web') {
 }
 
 module.exports = requireAuth;
+module.exports.extractToken = extractToken;

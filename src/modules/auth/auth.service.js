@@ -1,9 +1,24 @@
 const User = require('./user.model');
 const Role = require('./role.model');
 const ApiError = require('../../core/api-error');
-const { signToken } = require('./jwt');
+const loginHistory = require('../login-history/login-history.service');
+const { markSignedIn, markSignedOut } = require('./activity');
+const { signToken, verifyToken } = require('./jwt');
 
-async function signup({ name, email, password }) {
+const CMS_ROLES = ['admin', 'superadmin'];
+
+/**
+ * Starts a session: records the login, stamps the account's activity and mints
+ * a token scoped so a web token cannot be replayed against the CMS.
+ * `context` carries the caller's { ip, userAgent } for the login history.
+ */
+function startSession(user, scope, context) {
+  loginHistory.record({ user: user._id, scope, success: true, ...context });
+  markSignedIn(user);
+  return { user, token: signToken({ sub: user.id, scope }) };
+}
+
+async function signup({ name, email, password }, context = {}) {
   const existing = await User.findOne({ email });
   if (existing) {
     throw new ApiError(409, 'Email is already registered');
@@ -12,40 +27,67 @@ async function signup({ name, email, password }) {
   const userRole = await Role.findOne({ name: 'user' });
   const user = await User.create({ name, email, password, role: userRole._id });
   await user.populate('role');
-  const token = signToken({ sub: user.id, scope: 'web' });
 
-  return { user, token };
+  return startSession(user, 'web', context);
 }
 
-async function authenticate({ email, password }) {
+/**
+ * Failed attempts are logged against the account they targeted. Unknown
+ * emails are not: there is no account to attach them to.
+ */
+async function authenticate({ email, password }, scope, context) {
   const user = await User.findOne({ email }).select('+password').populate('role');
-  if (!user || !(await user.comparePassword(password))) {
+  if (!user) {
+    throw new ApiError(401, 'Invalid email or password');
+  }
+  if (!(await user.comparePassword(password))) {
+    loginHistory.record({
+      user: user._id,
+      scope,
+      success: false,
+      reason: 'invalid_password',
+      ...context,
+    });
     throw new ApiError(401, 'Invalid email or password');
   }
   return user;
 }
 
-async function signin({ email, password }) {
-  const user = await authenticate({ email, password });
-  const token = signToken({ sub: user.id, scope: 'web' });
-
-  return { user, token };
+async function signin(credentials, context = {}) {
+  const user = await authenticate(credentials, 'web', context);
+  return startSession(user, 'web', context);
 }
 
-const CMS_ROLES = ['admin', 'superadmin'];
+async function cmsSignin(credentials, context = {}) {
+  const user = await authenticate(credentials, 'cms', context);
 
-async function cmsSignin({ email, password }) {
-  const user = await authenticate({ email, password });
-
+  // The token is minted only after the role check.
   if (!CMS_ROLES.includes(user.role.name)) {
+    loginHistory.record({
+      user: user._id,
+      scope: 'cms',
+      success: false,
+      reason: 'not_admin',
+      ...context,
+    });
     throw new ApiError(403, 'Admin access required');
   }
 
-  // Minted only after the role check, and scoped so it cannot be confused
-  // with a web token.
-  const token = signToken({ sub: user.id, scope: 'cms' });
-
-  return { user, token };
+  return startSession(user, 'cms', context);
 }
 
-module.exports = { signup, signin, cmsSignin };
+/**
+ * Marks the account offline. Tokens are stateless, so this is best effort: a
+ * missing, invalid or other-scope token is simply ignored.
+ */
+function signout(token, scope) {
+  if (!token) return;
+  try {
+    const payload = verifyToken(token);
+    if (payload.scope === scope) markSignedOut(payload.sub);
+  } catch {
+    // Expired or tampered: nothing to mark.
+  }
+}
+
+module.exports = { signup, signin, cmsSignin, signout };

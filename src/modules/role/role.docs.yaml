@@ -1,0 +1,51 @@
+# Role endpoints (CMS).
+# Loaded by src/config/swagger.js; served at /api-docs.
+
+components:
+  schemas:
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          enum: [user, admin, superadmin]
+        permissions:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+
+/api/cms/roles:
+  get:
+    summary: List roles
+    description: Read-only; roles are seeded, not edited. Used to pick a user's role.
+    tags: [CMS Role]
+    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+    responses:
+      200:
+        description: Page of roles
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Role'
+                - $ref: '#/components/schemas/PageMeta'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      403:
+        $ref: '#/components/responses/WrongScope'

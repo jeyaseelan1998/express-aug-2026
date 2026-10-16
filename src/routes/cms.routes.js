@@ -12,6 +12,7 @@ const sizeRoutes = require('../modules/size/size.routes');
 const socialRoutes = require('../modules/social/social.routes');
 const pageRoutes = require('../modules/page/page.cms.routes');
 const userRoutes = require('../modules/user/user.routes');
+const roleRoutes = require('../modules/role/role.routes');
 
 const router = express.Router();
 
@@ -42,5 +43,6 @@ router.use('/size', requireCmsAuth, sizeRoutes);
 router.use('/social', requireCmsAuth, socialRoutes);
 router.use('/page', requireCmsAuth, pageRoutes);
 router.use('/users', requireCmsAuth, userRoutes);
+router.use('/roles', requireCmsAuth, roleRoutes);
 
 module.exports = router;
