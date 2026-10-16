@@ -5,9 +5,13 @@ const swaggerUi = require('swagger-ui-express');
 const indexRouter = require('./routes/index');
 const swaggerSpec = require('./config/swagger');
 const { corsOptions } = require('./config/cors');
+const { getTrustProxy } = require('./config/proxy');
 const { notFound, errorHandler } = require('./core/middlewares/error.middleware');
 
 const app = express();
+
+// Lets req.ip be the real client behind a reverse proxy; see config/proxy.js.
+app.set('trust proxy', getTrustProxy());
 
 app.use(cors(corsOptions));
 
