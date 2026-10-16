@@ -39,7 +39,7 @@ components:
       Newest first. Includes soft-deleted accounts (`deleted: 1`), like every
       other CMS list. Each user's role is populated; passwords are never returned.
     tags: [CMS User]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -69,7 +69,7 @@ components:
       The password is hashed before it is stored and is never returned.
       Without a `role`, the account gets the `user` role, like a web signup.
     tags: [CMS User]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     requestBody:
       required: true
       content:
@@ -112,7 +112,7 @@ components:
   get:
     summary: Get a user by id
     tags: [CMS User]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     responses:
@@ -133,7 +133,7 @@ components:
     summary: Update a user
     description: Send `password` only to change it; omit it to keep the current one.
     tags: [CMS User]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     requestBody:
@@ -181,7 +181,7 @@ components:
       `PATCH /{id}/delete` soft delete unless it must genuinely be purged.
       You cannot delete your own account.
     tags: [CMS User]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     responses:
@@ -205,7 +205,7 @@ components:
       Soft delete. Sets `deleted` to 1; the account can no longer sign in or
       use an existing session. You cannot delete your own account.
     tags: [CMS User]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     responses:
@@ -234,7 +234,7 @@ components:
     summary: Restore a user
     description: Undoes a soft delete, so the account can sign in again.
     tags: [CMS User]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     responses:
@@ -263,7 +263,7 @@ components:
       unknown email are not recorded. Rows expire after
       LOGIN_HISTORY_RETENTION_DAYS (default 90). Works for soft-deleted users.
     tags: [CMS User]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
       - $ref: '#/components/parameters/PageParam'
@@ -298,7 +298,7 @@ components:
       marks them offline. You cannot log yourself out this way; use the
       normal sign-out instead.
     tags: [CMS User]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     responses:

@@ -1,6 +1,5 @@
 const asyncHandler = require('../../core/async-handler');
 const authService = require('./auth.service');
-const { setAuthCookie, clearAuthCookie, isWebClient } = require('./auth-cookie');
 const { extractToken } = require('./auth.middleware');
 
 // Node reports IPv4 callers on a dual-stack socket as `::ffff:1.2.3.4`.
@@ -20,25 +19,19 @@ const SIGNIN_BY_SCOPE = {
 
 const signup = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
-  const { user, token } = await authService.signup({ name, email, password }, requestContext(req));
-  res.status(201).json({ user, token });
+  const session = await authService.signup({ name, email, password }, requestContext(req));
+  res.status(201).json(session);
 });
 
 /**
- * Browser clients (`X-Client-Type: web`) get the token as an httpOnly cookie;
- * everyone else gets it in the body.
+ * Returns `{ user, token, expiresAt }`. Every client -- browser or app -- stores
+ * the token itself and sends it back as `Authorization: Bearer <token>`.
  */
 function signin(scope) {
   return asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    const { user, token } = await SIGNIN_BY_SCOPE[scope]({ email, password }, requestContext(req));
-
-    if (isWebClient(req)) {
-      setAuthCookie(res, token, scope);
-      return res.status(200).json({ user });
-    }
-
-    res.status(200).json({ user, token });
+    const session = await SIGNIN_BY_SCOPE[scope]({ email, password }, requestContext(req));
+    res.status(200).json(session);
   });
 }
 
@@ -48,13 +41,12 @@ function profile(req, res) {
   res.status(200).json({ user: req.user });
 }
 
-// Tokens are stateless, so all the server can do is drop the cookie it set.
-// Bearer clients simply discard the token themselves; either way the call
-// succeeds so a client with an already-expired session can still clean up.
+// Tokens are stateless: the client deletes its own copy, and this only marks
+// the account offline. Always succeeds, so a client holding an expired token
+// can still sign out cleanly.
 function signout(scope) {
   return function handleSignout(req, res) {
-    authService.signout(extractToken(req, scope), scope);
-    clearAuthCookie(res, scope);
+    authService.signout(extractToken(req), scope);
     res.status(200).json({ message: 'Signed out' });
   };
 }

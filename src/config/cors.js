@@ -23,15 +23,14 @@ const corsOptions = {
       return callback(null, true);
     }
     if (isOriginAllowed(origin)) {
-      // Reflect the caller's origin rather than '*', which browsers reject
-      // on credentialed requests — auth here rides on cookies.
       return callback(null, true);
     }
     return callback(new ApiError(403, `Origin not allowed by CORS: ${origin}`));
   },
-  credentials: true,
+  // Auth travels in the Authorization header, not cookies, so requests are
+  // never credentialed.
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-client-type'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   maxAge: 86400,
 };
 

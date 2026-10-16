@@ -21,16 +21,6 @@ const options = {
           scheme: 'bearer',
           bearerFormat: 'JWT',
         },
-        cmsCookie: {
-          type: 'apiKey',
-          in: 'cookie',
-          name: 'cms_token',
-        },
-        webCookie: {
-          type: 'apiKey',
-          in: 'cookie',
-          name: 'web_token',
-        },
       },
       parameters: {
         PageParam: {

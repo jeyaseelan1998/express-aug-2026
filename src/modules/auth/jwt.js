@@ -10,4 +10,9 @@ function verifyToken(token) {
   return jwt.verify(token, process.env.JWT_SECRET);
 }
 
-module.exports = { signToken, verifyToken };
+/** When the token stops working, as a unix timestamp in seconds. */
+function tokenExpiresAt(token) {
+  return jwt.decode(token).exp;
+}
+
+module.exports = { signToken, verifyToken, tokenExpiresAt };

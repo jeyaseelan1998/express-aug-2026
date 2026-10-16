@@ -1,20 +1,17 @@
 const User = require('./user.model');
 const ApiError = require('../../core/api-error');
 const { verifyToken } = require('./jwt');
-const { COOKIE_NAMES } = require('./auth-cookie');
 const { touchLastSeen } = require('./activity');
 
-function extractToken(req, scope) {
+/** The token from an `Authorization: Bearer <token>` header, or null. */
+function extractToken(req) {
   const header = req.headers.authorization || '';
-  if (header.startsWith('Bearer ')) {
-    return header.slice('Bearer '.length).trim();
-  }
-  return req.cookies?.[COOKIE_NAMES[scope]] || null;
+  return header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() || null : null;
 }
 
 /**
- * Requires a signed-in user for the given scope, reading the token from an
- * Authorization: Bearer header or that scope's httpOnly cookie.
+ * Requires a signed-in user for the given scope, reading the token from the
+ * `Authorization: Bearer` header. Clients store the token themselves.
  *
  * The scope claim matters: web and cms tokens are signed with the same secret
  * and carry the same shape, so without it an ordinary web login could be
@@ -24,7 +21,7 @@ function extractToken(req, scope) {
 function requireAuth(scope = 'web') {
   return async function authenticate(req, res, next) {
     try {
-      const token = extractToken(req, scope);
+      const token = extractToken(req);
       if (!token) {
         throw new ApiError(401, 'Authentication required');
       }

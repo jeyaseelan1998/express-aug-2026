@@ -48,10 +48,7 @@ Routes are namespaced by consumer: `/api/web/*` for the public-facing site/app, 
 | GET    | `/api/cms/health`      | -                                             |
 | POST   | `/api/cms/auth/signin` | `{ email, password }` (admin-role users only) |
 
-`signup` always returns `{ user, token }`. Both `signin` endpoints behave the same way based on the `X-Client-Type` request header:
-
-- `X-Client-Type: web` — sets the token as an httpOnly cookie and returns `{ user }` only. Web uses cookie name `web_token`, CMS uses `cms_token` (kept separate so both can coexist in the same browser without colliding).
-- anything else / omitted — returns `{ user, token }` in the body (for mobile/non-browser clients).
+`signup` and both `signin` endpoints return `{ user, token, expiresAt }`. The API sets no cookies: every client stores the token itself (the admin and storefront keep it in a cookie written from JavaScript) and sends it on each request as `Authorization: Bearer <token>`. `expiresAt` is a unix timestamp (seconds) for when the token stops working, so the client can expire its copy at the same moment. Web tokens and CMS tokens are scoped: one cannot be used on the other's endpoints.
 
 CMS signin additionally checks that `user.role.name` is `admin` or `superadmin` (role is populated on signin) and returns `403` otherwise. There is no CMS signup endpoint — admin/superadmin accounts are promoted from regular accounts (e.g. by pointing `User.role` at the desired Role document) rather than self-registered, since public self-signup into a privileged role is a common privilege-escalation vector.
 
@@ -93,7 +90,7 @@ src/
       <name>.service.js     # business logic (usually a createCrudService config)
       <name>.routes.js      # validation rules + router (usually createCrudRouter)
       <name>.docs.yaml      # OpenAPI docs for the endpoints
-    auth/                   # users, roles, JWT, cookies, requireAuth middleware
+    auth/                   # users, roles, JWT, requireAuth middleware
     media/                  # S3 uploads, signed URLs, streaming
     page/                   # CMS pages + widgets/ (one file per widget type)
     brand/ category/ color/ product/ promo-code/ size/ social/ style/

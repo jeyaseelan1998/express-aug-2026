@@ -27,7 +27,7 @@ components:
     summary: List roles
     description: Read-only; roles are seeded, not edited. Used to pick a user's role.
     tags: [CMS Role]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/LimitParam'

@@ -3,19 +3,22 @@ const Role = require('./role.model');
 const ApiError = require('../../core/api-error');
 const loginHistory = require('../login-history/login-history.service');
 const { markSignedIn, markSignedOut } = require('./activity');
-const { signToken, verifyToken } = require('./jwt');
+const { signToken, verifyToken, tokenExpiresAt } = require('./jwt');
 
 const CMS_ROLES = ['admin', 'superadmin'];
 
 /**
  * Starts a session: records the login, stamps the account's activity and mints
- * a token scoped so a web token cannot be replayed against the CMS.
+ * a token scoped so a web token cannot be replayed against the CMS. The client
+ * stores the token itself and sends it back as `Authorization: Bearer`;
+ * `expiresAt` tells it when to drop it.
  * `context` carries the caller's { ip, userAgent } for the login history.
  */
 function startSession(user, scope, context) {
   loginHistory.record({ user: user._id, scope, success: true, ...context });
   markSignedIn(user);
-  return { user, token: signToken({ sub: user.id, scope, sv: user.sessionVersion ?? 0 }) };
+  const token = signToken({ sub: user.id, scope, sv: user.sessionVersion ?? 0 });
+  return { user, token, expiresAt: tokenExpiresAt(token) };
 }
 
 async function signup({ name, email, password }, context = {}) {

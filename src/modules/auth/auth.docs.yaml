@@ -58,6 +58,13 @@ components:
           $ref: '#/components/schemas/User'
         token:
           type: string
+          description: >
+            Store it on the client (e.g. a cookie set from JavaScript) and send
+            it back on every request as `Authorization: Bearer <token>`.
+        expiresAt:
+          type: integer
+          format: int64
+          description: Unix timestamp (seconds) when the token expires; drop it then
     Error:
       type: object
       properties:
@@ -112,16 +119,6 @@ components:
   post:
     summary: Sign in with email and password
     tags: [Web Auth]
-    parameters:
-      - in: header
-        name: X-Client-Type
-        schema:
-          type: string
-          enum: [web, mobile]
-        description: >
-          'web' sets an httpOnly auth cookie and omits the token from the
-          response body. Any other value (or omitted) returns the token
-          in the response body instead, for mobile/non-browser clients.
     requestBody:
       required: true
       content:
@@ -140,10 +137,7 @@ components:
                 example: password123
     responses:
       200:
-        description: >
-          Signed in successfully. When X-Client-Type is 'web', the token
-          is set as an httpOnly cookie and the body contains only `user`.
-          Otherwise the body matches AuthResponse (includes `token`).
+        description: Signed in. Store `token` and send it as a Bearer header.
         content:
           application/json:
             schema:
@@ -165,11 +159,8 @@ components:
   get:
     summary: Get the signed-in user's details
     tags: [Web Auth]
-    description: >
-      Reads the token from the `Authorization: Bearer` header when present,
-      otherwise from the httpOnly `web_token` cookie set for X-Client-Type
-      'web' clients.
-    security: [{ bearerAuth: [] }, { webCookie: [] }]
+    description: "Reads the token from the `Authorization: Bearer` header."
+    security: [{ bearerAuth: [] }]
     responses:
       200:
         description: The signed-in user
@@ -194,9 +185,10 @@ components:
     summary: Sign out of the web session
     tags: [Web Auth]
     description: >
-      Clears the httpOnly `web_token` cookie. Tokens are stateless, so bearer
-      clients should discard the token on their side. Always succeeds, even
-      without a valid session, so clients can clean up an expired one.
+      Marks the account offline when a valid Bearer token is sent. Tokens are
+      stateless, so the client must also delete its stored token. Always
+      succeeds, even without a valid session, so clients can clean up an
+      expired one.
     responses:
       200:
         description: Signed out
@@ -213,16 +205,6 @@ components:
   post:
     summary: Sign in to the CMS (admin accounts only)
     tags: [CMS Auth]
-    parameters:
-      - in: header
-        name: X-Client-Type
-        schema:
-          type: string
-          enum: [web, mobile]
-        description: >
-          'web' sets an httpOnly cms_token cookie and omits the token from
-          the response body. Any other value (or omitted) returns the
-          token in the response body instead.
     requestBody:
       required: true
       content:
@@ -239,10 +221,7 @@ components:
                 format: password
     responses:
       200:
-        description: >
-          Signed in successfully. When X-Client-Type is 'web', the token
-          is set as an httpOnly cms_token cookie and the body contains
-          only `user`. Otherwise the body matches AuthResponse.
+        description: Signed in. Store `token` and send it as a Bearer header.
         content:
           application/json:
             schema:
@@ -270,11 +249,8 @@ components:
   get:
     summary: Get the signed-in CMS user's details
     tags: [CMS Auth]
-    description: >
-      Reads the token from the `Authorization: Bearer` header when present,
-      otherwise from the httpOnly `cms_token` cookie set for X-Client-Type
-      'web' clients.
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    description: "Reads the token from the `Authorization: Bearer` header."
+    security: [{ bearerAuth: [] }]
     responses:
       200:
         description: The signed-in user
@@ -295,9 +271,10 @@ components:
     summary: Sign out of the CMS session
     tags: [CMS Auth]
     description: >
-      Clears the httpOnly `cms_token` cookie. Tokens are stateless, so bearer
-      clients should discard the token on their side. Always succeeds, even
-      without a valid session, so clients can clean up an expired one.
+      Marks the account offline when a valid Bearer token is sent. Tokens are
+      stateless, so the client must also delete its stored token. Always
+      succeeds, even without a valid session, so clients can clean up an
+      expired one.
     responses:
       200:
         description: Signed out

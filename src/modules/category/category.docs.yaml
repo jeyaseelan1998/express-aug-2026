@@ -21,7 +21,7 @@ components:
   get:
     summary: List categories
     tags: [CMS Category]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -46,7 +46,7 @@ components:
   post:
     summary: Create a category
     tags: [CMS Category]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     requestBody:
       required: true
       content:
@@ -78,7 +78,7 @@ components:
   get:
     summary: Get a category by id
     tags: [CMS Category]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     responses:
@@ -98,7 +98,7 @@ components:
   put:
     summary: Update a category
     tags: [CMS Category]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     requestBody:
@@ -136,7 +136,7 @@ components:
       purged. Works on already soft-deleted records too. Anything still
       referencing this id is left pointing at nothing.
     tags: [CMS Category]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     responses:
@@ -157,7 +157,7 @@ components:
       row is kept but stops appearing in any list or lookup. Deleting an
       already-deleted record returns 404, since it is no longer visible.
     tags: [CMS Category]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     responses:
@@ -185,7 +185,7 @@ components:
       record, which shows up in ordinary lists and lookups again. Restoring
       a record that is not deleted leaves it as it is.
     tags: [CMS Category]
-    security: [{ bearerAuth: [] }, { cmsCookie: [] }]
+    security: [{ bearerAuth: [] }]
     parameters:
       - $ref: '#/components/parameters/ResourceId'
     responses:
