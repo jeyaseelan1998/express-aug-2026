@@ -2,6 +2,7 @@ const User = require('./user.model');
 const ApiError = require('../../core/api-error');
 const { verifyToken } = require('./jwt');
 const { touchLastSeen } = require('./activity');
+const { isSessionValid } = require('./sessions');
 
 /** The token from an `Authorization: Bearer <token>` header, or null. */
 function extractToken(req) {
@@ -42,14 +43,14 @@ function requireAuth(scope = 'web') {
         throw new ApiError(401, 'Account no longer exists');
       }
 
-      // Tokens minted before sessionVersion existed carry no `sv`: they count
-      // as version 0, so introducing it signed nobody out.
-      if ((payload.sv ?? 0) !== (user.sessionVersion ?? 0)) {
+      // Over 4 hours old, logged out everywhere, or this device logged out.
+      if (!isSessionValid(user, payload)) {
         throw new ApiError(401, 'Your session has ended. Please sign in again.');
       }
 
       touchLastSeen(user);
       req.user = user;
+      req.sessionId = payload.sid;
       next();
     } catch (err) {
       next(err);

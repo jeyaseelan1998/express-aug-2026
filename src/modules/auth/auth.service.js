@@ -2,24 +2,10 @@ const User = require('./user.model');
 const Role = require('./role.model');
 const ApiError = require('../../core/api-error');
 const loginHistory = require('../login-history/login-history.service');
-const { markSignedIn, markSignedOut } = require('./activity');
-const { signToken, verifyToken, tokenExpiresAt } = require('./jwt');
+const { verifyToken } = require('./jwt');
+const { startSession, signOutSession } = require('./sessions');
 
 const CMS_ROLES = ['admin', 'superadmin'];
-
-/**
- * Starts a session: records the login, stamps the account's activity and mints
- * a token scoped so a web token cannot be replayed against the CMS. The client
- * stores the token itself and sends it back as `Authorization: Bearer`;
- * `expiresAt` tells it when to drop it.
- * `context` carries the caller's { ip, userAgent } for the login history.
- */
-function startSession(user, scope, context) {
-  loginHistory.record({ user: user._id, scope, success: true, ...context });
-  markSignedIn(user);
-  const token = signToken({ sub: user.id, scope, sv: user.sessionVersion ?? 0 });
-  return { user, token, expiresAt: tokenExpiresAt(token) };
-}
 
 async function signup({ name, email, password }, context = {}) {
   const existing = await User.findOne({ email });
@@ -44,10 +30,9 @@ async function authenticate({ email, password }, scope, context) {
     throw new ApiError(401, 'Invalid email or password');
   }
   if (!(await user.comparePassword(password))) {
-    loginHistory.record({
+    loginHistory.recordFailure({
       user: user._id,
       scope,
-      success: false,
       reason: 'invalid_password',
       ...context,
     });
@@ -66,10 +51,9 @@ async function cmsSignin(credentials, context = {}) {
 
   // The token is minted only after the role check.
   if (!CMS_ROLES.includes(user.role.name)) {
-    loginHistory.record({
+    loginHistory.recordFailure({
       user: user._id,
       scope: 'cms',
-      success: false,
       reason: 'not_admin',
       ...context,
     });
@@ -80,14 +64,14 @@ async function cmsSignin(credentials, context = {}) {
 }
 
 /**
- * Marks the account offline. Tokens are stateless, so this is best effort: a
+ * Ends the caller's own session and marks them offline. Best effort: a
  * missing, invalid or other-scope token is simply ignored.
  */
 function signout(token, scope) {
   if (!token) return;
   try {
     const payload = verifyToken(token);
-    if (payload.scope === scope) markSignedOut(payload.sub);
+    if (payload.scope === scope) signOutSession(payload.sub, payload.sid);
   } catch {
     // Expired or tampered: nothing to mark.
   }

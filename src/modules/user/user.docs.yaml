@@ -28,6 +28,27 @@ components:
         userAgent:
           type: string
           nullable: true
+        expiresAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: Successful sign-ins only -- when that session's token expires
+        endedAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: When the session was ended early, if it was
+        endedBy:
+          type: string
+          nullable: true
+          enum: [user, admin, null]
+          description: Who ended it -- the user signing out, or an admin
+        active:
+          type: boolean
+          description: The session can still be used (not ended, not expired)
+        current:
+          type: boolean
+          description: This is the session making the request
         createdAt:
           type: integer
           format: int64
@@ -259,7 +280,8 @@ components:
     summary: Login history of a user
     description: >
       Sign-in attempts on this account, newest first: successful sign-ins and
-      signups, wrong passwords, and non-admins trying the CMS. Attempts with an
+      signups, wrong passwords, and non-admins trying the CMS. Each successful
+      sign-in is a session (device) with `active` / `current` flags. Attempts with an
       unknown email are not recorded. Rows expire after
       LOGIN_HISTORY_RETENTION_DAYS (default 90). Works for soft-deleted users.
     tags: [CMS User]
@@ -293,7 +315,8 @@ components:
   patch:
     summary: Log a user out everywhere
     description: >
-      Ends every session the user has -- website and CMS, on every device.
+      Ends every session the user has -- website and CMS, on every device --
+      and marks each one ended in their login history.
       Their next request gets a 401 and they have to sign in again. Also
       marks them offline. You cannot log yourself out this way; use the
       normal sign-out instead.
@@ -321,3 +344,46 @@ components:
         $ref: '#/components/responses/Unauthorized'
       404:
         $ref: '#/components/responses/NotFoundError'
+
+/api/cms/users/{id}/sessions/{sessionId}/logout:
+  patch:
+    summary: Log a user out of one device
+    description: >
+      Ends a single session -- one row of the user's login history -- so the
+      token on that device stops working at once. Other devices stay signed
+      in. Your own current session cannot be ended this way; use the normal
+      sign-out instead.
+    tags: [CMS User]
+    security: [{ bearerAuth: [] }]
+    parameters:
+      - $ref: '#/components/parameters/ResourceId'
+      - in: path
+        name: sessionId
+        required: true
+        schema:
+          type: string
+        description: Login history id of the session
+    responses:
+      200:
+        description: Session ended
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                session:
+                  $ref: '#/components/schemas/LoginHistory'
+      400:
+        description: Invalid id, or it is your current session
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      401:
+        $ref: '#/components/responses/Unauthorized'
+      404:
+        description: User not found, or the session is not active
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'

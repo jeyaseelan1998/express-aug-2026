@@ -1,13 +1,14 @@
 const mongoose = require('mongoose');
 const heroWidget = require('./hero.widget');
 const brandsWidget = require('./brands.widget');
+const productsWidget = require('./products.widget');
 
 /**
  * Every widget a page can hold. Adding a widget type means dropping a
  * `<name>.widget.js` file in this directory and listing it here -- the page
  * model, service and routes need no change.
  */
-const widgets = [heroWidget, brandsWidget];
+const widgets = [heroWidget, brandsWidget, productsWidget];
 
 /**
  * The shape shared by every widget in a page's `widgets` array. It carries no

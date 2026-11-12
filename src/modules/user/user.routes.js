@@ -1,5 +1,5 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const ApiError = require('../../core/api-error');
 const asyncHandler = require('../../core/async-handler');
 const createCrudRouter = require('../../core/crud/crud.router');
@@ -31,7 +31,30 @@ router.get(
   paginationRules(),
   validate,
   asyncHandler(async (req, res) => {
-    res.status(200).json(await userService.getLoginHistory(req.params.id, req.query));
+    const history = await userService.getLoginHistory(req.params.id, req.query, {
+      currentSessionId: req.sessionId,
+    });
+    res.status(200).json(history);
+  })
+);
+
+/** Ending the session you are using would sign you out mid-request. */
+function notCurrentSession(req, _res, next) {
+  if (req.sessionId && req.sessionId === req.params.sessionId) {
+    return next(new ApiError(400, 'This is your current session; use Logout in the menu'));
+  }
+  next();
+}
+
+router.patch(
+  '/:id/sessions/:sessionId/logout',
+  validateId(),
+  param('sessionId').isMongoId().withMessage('A valid session id is required'),
+  validate,
+  notCurrentSession,
+  asyncHandler(async (req, res) => {
+    const session = await userService.logoutSession(req.params.id, req.params.sessionId);
+    res.status(200).json({ session });
   })
 );
 

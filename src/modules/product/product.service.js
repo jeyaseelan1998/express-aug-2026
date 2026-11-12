@@ -8,6 +8,15 @@ const Size = require('../size/size.model');
 const Style = require('../style/style.model');
 const Product = require('./product.model');
 
+/**
+ * The orders a product list can be asked for with `?type=`. Nothing records
+ * sales yet, so top selling ranks by rating until orders exist.
+ */
+const LIST_SORTS = {
+  new_arrivals: { createdAt: -1 },
+  top_selling: { rating: -1, createdAt: -1 },
+};
+
 async function serialize(doc) {
   const json = await signMediaPaths(doc.toJSON(), ['thumbnail']);
 
@@ -21,7 +30,7 @@ async function serialize(doc) {
   return json;
 }
 
-module.exports = createCrudService(Product, {
+const productService = createCrudService(Product, {
   fields: [
     'name',
     'thumbnail',
@@ -62,5 +71,8 @@ module.exports = createCrudService(Product, {
     stock: { model: Size, ids: (rows) => (rows || []).map((row) => row?.size) },
   },
   filters: ['brand', 'category'],
+  sorts: LIST_SORTS,
   serialize,
 });
+
+module.exports = { ...productService, LIST_TYPES: Object.keys(LIST_SORTS) };

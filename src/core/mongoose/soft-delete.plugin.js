@@ -38,14 +38,13 @@ function softDeletePlugin(schema) {
     },
   });
 
-  schema.pre(GUARDED, function skipDeleted(next) {
+  schema.pre(GUARDED, function skipDeleted() {
     if (!this.getOptions().withDeleted && this.getFilter().deleted === undefined) {
       // Excludes deleted rows rather than requiring deleted === 0, so documents
       // written before this plugin existed -- which carry no `deleted` field at
       // all -- still count as live instead of silently vanishing.
       this.where({ deleted: { $ne: DELETED } });
     }
-    next();
   });
 
   /** Marks the document deleted in place; the row itself is never removed. */
