@@ -73,13 +73,31 @@ components:
                 allOf:
                   - $ref: '#/components/schemas/Media'
                 nullable: true
+    ProductsWidget:
+      type: object
+      description: A titled list of products. `type` is always `products`.
+      required: [type, title, listType]
+      properties:
+        _id:
+          type: string
+        type:
+          type: string
+          enum: [products]
+        title:
+          type: string
+          example: New Arrivals
+        listType:
+          type: string
+          enum: [new_arrivals, top_selling]
+          description: Which products the list shows
     Widget:
       description: >
-        A page widget. The `type` field selects the shape -- `hero` or
-        `brands`, and further widget types are added alongside them.
+        A page widget. The `type` field selects the shape -- `hero`,
+        `brands` or `products`, and further widget types are added alongside them.
       oneOf:
         - $ref: '#/components/schemas/HeroWidget'
         - $ref: '#/components/schemas/BrandsWidget'
+        - $ref: '#/components/schemas/ProductsWidget'
       discriminator:
         propertyName: type
     Page:

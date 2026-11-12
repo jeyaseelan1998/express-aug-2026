@@ -16,6 +16,8 @@ const { paginationFrom, pageMeta } = require('../paginate');
  *              when the ids sit inside the value. Only fields present in the
  *              payload are checked, so partial updates work too.
  *   filters    Query-string keys passed straight through as list filters.
+ *   sorts      Named list orders picked by the `type` query param, e.g.
+ *              `{ top_selling: { rating: -1 } }`. Lists default to newest first.
  *   serialize  `async (doc) => json`. Defaults to `doc.toJSON()`.
  */
 function createCrudService(
@@ -26,6 +28,7 @@ function createCrudService(
     populate = [],
     refs = {},
     filters = [],
+    sorts = {},
     serialize = (doc) => doc.toJSON(),
   }
 ) {
@@ -83,11 +86,13 @@ function createCrudService(
       if (query[key] !== undefined) filter[key] = query[key];
     }
 
+    const sort = sorts[query.type] || { createdAt: -1 };
+
     let find = Model.find(filter).setOptions({ withDeleted });
     if (populatePaths.length) find = find.populate(populatePaths);
 
     const [docs, total] = await Promise.all([
-      find.sort({ createdAt: -1 }).skip(skip).limit(limit),
+      find.sort(sort).skip(skip).limit(limit),
       Model.countDocuments(filter).setOptions({ withDeleted }),
     ]);
 

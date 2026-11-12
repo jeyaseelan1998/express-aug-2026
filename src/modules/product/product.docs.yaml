@@ -1,4 +1,4 @@
-# Product endpoints (CMS).
+# Product endpoints (CMS management + public web list).
 # Loaded by src/config/swagger.js; served at /api-docs.
 
 components:
@@ -172,6 +172,14 @@ components:
         schema:
           type: string
         description: Filter by category id
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum: [new_arrivals, top_selling]
+        description: >
+          List order. new_arrivals is newest first; top_selling is highest
+          rated first until sales are recorded. Omitted, newest first.
     responses:
       200:
         description: Page of products
@@ -352,3 +360,48 @@ components:
         $ref: '#/components/responses/Unauthorized'
       404:
         $ref: '#/components/responses/NotFoundError'
+
+/api/web/product:
+  get:
+    summary: List products
+    description: >
+      Public: no session is needed. Same shape as the CMS list, but
+      soft-deleted products are never included.
+    tags: [Web Product]
+    parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - in: query
+        name: brand
+        schema:
+          type: string
+        description: Filter by brand id
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: Filter by category id
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum: [new_arrivals, top_selling]
+        description: >
+          List order. new_arrivals is newest first; top_selling is highest
+          rated first until sales are recorded. Omitted, newest first.
+    responses:
+      200:
+        description: Page of products
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Product'
+                - $ref: '#/components/schemas/PageMeta'
+      400:
+        $ref: '#/components/responses/ValidationFailed'

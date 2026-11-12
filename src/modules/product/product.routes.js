@@ -1,6 +1,7 @@
 const { body, query } = require('express-validator');
 const createCrudRouter = require('../../core/crud/crud.router');
 const productService = require('./product.service');
+const { listTypeRules } = require('./product.validators');
 
 const idField = (field, label) =>
   body(field).optional({ values: 'null' }).isMongoId().withMessage(`${label} must be a valid id`);
@@ -45,6 +46,7 @@ module.exports = createCrudRouter({
     list: [
       query('brand').optional().isMongoId().withMessage('brand must be a valid id'),
       query('category').optional().isMongoId().withMessage('category must be a valid id'),
+      ...listTypeRules(),
     ],
     create: [
       body('name').trim().notEmpty().withMessage('Name is required'),

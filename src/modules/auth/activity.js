@@ -32,26 +32,22 @@ function touchLastSeen(user) {
   setActivity(user._id, { lastSeenAt: user.lastSeenAt });
 }
 
-/**
- * Ends every session the user has, on every device and surface, and marks
- * them offline. Awaited, unlike the other activity writes: the caller is
- * reporting that the sessions are over.
- */
-async function endAllSessions(userId) {
-  await User.updateOne(
-    { _id: userId },
-    { $inc: { sessionVersion: 1 }, $set: { lastSeenAt: null } },
-    { timestamps: false }
-  );
-}
-
 function markSignedOut(userId) {
   setActivity(userId, { lastSeenAt: null });
 }
 
-/** 'online' when seen within the last few minutes, otherwise 'offline'. */
+// lastSeenAt is a Date on a document but unix seconds once serialized.
+const toMillis = (value) => {
+  if (!value) return 0;
+  return typeof value === 'number' ? value * 1000 : new Date(value).getTime();
+};
+
+/**
+ * 'online' when seen within the last few minutes, otherwise 'offline'. Takes
+ * a user document or its serialized JSON.
+ */
 function presenceOf(user) {
-  const lastSeen = user.lastSeenAt ? new Date(user.lastSeenAt).getTime() : 0;
+  const lastSeen = toMillis(user.lastSeenAt);
   return Date.now() - lastSeen < ONLINE_WINDOW_MS ? 'online' : 'offline';
 }
 
@@ -59,7 +55,6 @@ module.exports = {
   markSignedIn,
   touchLastSeen,
   markSignedOut,
-  endAllSessions,
   presenceOf,
   ONLINE_WINDOW_MS,
 };

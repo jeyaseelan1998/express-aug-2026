@@ -42,14 +42,26 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Single sessions ended before their token expired (one device logged
+    // out). Kept only until that token would have expired anyway, so the
+    // list stays a handful of entries. Maintained by auth/sessions.js.
+    revokedSessions: {
+      type: [
+        {
+          _id: false,
+          sid: { type: mongoose.Schema.Types.ObjectId, required: true },
+          exp: { type: Date, required: true },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );
 
-userSchema.pre('save', async function hashPassword(next) {
-  if (!this.isModified('password')) return next();
+userSchema.pre('save', async function hashPassword() {
+  if (!this.isModified('password')) return;
   this.password = await bcrypt.hash(this.password, 10);
-  next();
 });
 
 userSchema.methods.comparePassword = function comparePassword(candidate) {
@@ -58,7 +70,7 @@ userSchema.methods.comparePassword = function comparePassword(candidate) {
 
 userSchema.plugin(softDeletePlugin);
 userSchema.plugin(toJsonPlugin, {
-  hide: ['password', 'sessionVersion'],
+  hide: ['password', 'sessionVersion', 'revokedSessions'],
   dates: ['lastLoginAt', 'lastSeenAt'],
 });
 

@@ -37,12 +37,17 @@ components:
           description: >
             Unix timestamp (seconds) of the last authenticated request, refreshed
             at most once a minute; cleared on sign-out
+        activeSessions:
+          type: integer
+          description: >
+            Returned by the CMS user endpoints. Signed-in sessions (devices)
+            that have not ended or expired; 0 means logged out.
         status:
           type: string
           enum: [online, offline]
           description: >
-            Returned by the CMS user endpoints. `online` when seen in the last
-            5 minutes.
+            Returned by the CMS user endpoints. `online` when the user has an
+            active session and was seen in the last 5 minutes.
         createdAt:
           type: integer
           format: int64
@@ -64,7 +69,9 @@ components:
         expiresAt:
           type: integer
           format: int64
-          description: Unix timestamp (seconds) when the token expires; drop it then
+          description: >
+            Unix timestamp (seconds) when the token expires -- at most 4 hours
+            after sign-in; drop it then
     Error:
       type: object
       properties:
@@ -159,7 +166,7 @@ components:
   get:
     summary: Get the signed-in user's details
     tags: [Web Auth]
-    description: "Reads the token from the `Authorization: Bearer` header."
+    description: 'Reads the token from the `Authorization: Bearer` header.'
     security: [{ bearerAuth: [] }]
     responses:
       200:
@@ -249,7 +256,7 @@ components:
   get:
     summary: Get the signed-in CMS user's details
     tags: [CMS Auth]
-    description: "Reads the token from the `Authorization: Bearer` header."
+    description: 'Reads the token from the `Authorization: Bearer` header.'
     security: [{ bearerAuth: [] }]
     responses:
       200:

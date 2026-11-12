@@ -9,9 +9,10 @@ const RETENTION_DAYS = Number(process.env.LOGIN_HISTORY_RETENTION_DAYS) || 90;
 const USER_AGENT_MAX = 512;
 
 /**
- * One sign-in attempt on an existing account. Append-only: rows are never
- * edited or soft-deleted, only expired by the TTL index (or removed with the
- * account on a hard delete).
+ * One sign-in attempt on an existing account. A successful one is also a
+ * session: its id travels in the token (`sid`), and the row records when the
+ * session expires and whether it was ended early. Rows are never soft-deleted,
+ * only expired by the TTL index (or removed with the account on a hard delete).
  */
 const loginHistorySchema = new mongoose.Schema(
   {
@@ -43,6 +44,21 @@ const loginHistorySchema = new mongoose.Schema(
       default: null,
       maxlength: USER_AGENT_MAX,
     },
+    // Sessions only (successful sign-ins): when the token expires, and when
+    // and by whom the session was ended early, if it was.
+    expiresAt: {
+      type: Date,
+      default: null,
+    },
+    endedAt: {
+      type: Date,
+      default: null,
+    },
+    endedBy: {
+      type: String,
+      enum: ['user', 'admin', null],
+      default: null,
+    },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
@@ -51,7 +67,7 @@ const loginHistorySchema = new mongoose.Schema(
 loginHistorySchema.index({ user: 1, createdAt: -1 });
 loginHistorySchema.index({ createdAt: 1 }, { expireAfterSeconds: RETENTION_DAYS * 24 * 60 * 60 });
 
-loginHistorySchema.plugin(toJsonPlugin);
+loginHistorySchema.plugin(toJsonPlugin, { dates: ['expiresAt', 'endedAt'] });
 
 module.exports = mongoose.model('LoginHistory', loginHistorySchema);
 module.exports.USER_AGENT_MAX = USER_AGENT_MAX;
